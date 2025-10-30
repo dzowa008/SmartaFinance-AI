@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { LogoIcon, DashboardIcon, ChatIcon, SunIcon, MoonIcon, SignOutIcon, ClipboardListIcon, SettingsIcon, NetWorthIcon, CommunityIcon, ReportsIcon, LearnIcon, InvestmentIcon, SplitterIcon, VaultIcon, WifiOffIcon } from './Icons';
+import { LogoIcon, DashboardIcon, ChatIcon, SunIcon, MoonIcon, SignOutIcon, ClipboardListIcon, SettingsIcon, NetWorthIcon, CommunityIcon, ReportsIcon, LearnIcon, InvestmentIcon, SplitterIcon, VaultIcon, WifiOffIcon, BanknotesIcon, MicrophoneIcon } from './Icons';
 
 type View = 'dashboard' | 'chat' | 'financialHub' | 'goals' | 'settings' | 'security' | 'netWorth' | 'community' | 'reports' | 'learn' | 'investments' | 'splitter' | 'vault';
 
@@ -8,9 +9,10 @@ interface HeaderProps {
   setView: (view: View) => void;
   onSignOut: () => void;
   isOffline: boolean;
+  onToggleLiveAssistant: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ view, setView, onSignOut, isOffline }) => {
+export const Header: React.FC<HeaderProps> = ({ view, setView, onSignOut, isOffline, onToggleLiveAssistant }) => {
   const [isDark, setIsDark] = React.useState(() => {
     return localStorage.getItem('theme') === 'dark' || 
            (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches);
@@ -54,6 +56,7 @@ export const Header: React.FC<HeaderProps> = ({ view, setView, onSignOut, isOffl
           
           <nav className="hidden xl:flex items-center gap-1 p-1 bg-slate-200 dark:bg-navy-900 rounded-xl">
             <button onClick={() => setView('dashboard')} className={navItemClasses('dashboard')}><DashboardIcon className="h-5 w-5" /><span>Dashboard</span></button>
+            <button onClick={() => setView('financialHub')} className={navItemClasses('financialHub')}><BanknotesIcon className="h-5 w-5" /><span>Hub</span></button>
             <button onClick={() => setView('netWorth')} className={navItemClasses('netWorth')}><NetWorthIcon className="h-5 w-5" /><span>Net Worth</span></button>
             <button onClick={() => setView('investments')} className={navItemClasses('investments')}><InvestmentIcon className="h-5 w-5" /><span>Invest</span></button>
             <button onClick={() => setView('splitter')} className={navItemClasses('splitter')}><SplitterIcon className="h-5 w-5" /><span>Splitter</span></button>
@@ -65,6 +68,9 @@ export const Header: React.FC<HeaderProps> = ({ view, setView, onSignOut, isOffl
           <div className="flex items-center gap-2">
             <button onClick={toggleTheme} className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-navy-800" aria-label="Toggle theme">
               {isDark ? <SunIcon className="h-6 w-6" /> : <MoonIcon className="h-6 w-6" />}
+            </button>
+             <button onClick={onToggleLiveAssistant} className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-navy-800" aria-label="Live Assistant">
+              <MicrophoneIcon className="h-6 w-6 text-slate-600 dark:text-slate-300" />
             </button>
             <button onClick={() => setView('settings')} className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-navy-800" aria-label="Settings">
               <SettingsIcon className="h-6 w-6 text-slate-600 dark:text-slate-300" />
@@ -78,6 +84,7 @@ export const Header: React.FC<HeaderProps> = ({ view, setView, onSignOut, isOffl
        {/* Mobile/Tablet Navigation */}
        <nav className="xl:hidden flex items-center justify-around gap-1 p-1 bg-slate-100 dark:bg-navy-900 border-t border-slate-200 dark:border-navy-800">
             <button onClick={() => setView('dashboard')} className={mobileNavItemClasses('dashboard')}><DashboardIcon className="h-5 w-5" /><span className="text-xs font-medium">Dashboard</span></button>
+            <button onClick={() => setView('financialHub')} className={mobileNavItemClasses('financialHub')}><BanknotesIcon className="h-5 w-5" /><span className="text-xs font-medium">Hub</span></button>
             <button onClick={() => setView('netWorth')} className={mobileNavItemClasses('netWorth')}><NetWorthIcon className="h-5 w-5" /><span className="text-xs font-medium">Net Worth</span></button>
             <button onClick={() => setView('investments')} className={mobileNavItemClasses('investments')}><InvestmentIcon className="h-5 w-5" /><span className="text-xs font-medium">Invest</span></button>
             <button onClick={() => setView('reports')} className={mobileNavItemClasses('reports')}><ReportsIcon className="h-5 w-5" /><span className="text-xs font-medium">Reports</span></button>

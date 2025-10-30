@@ -14,6 +14,7 @@ import { Learn } from './Learn';
 import { Investments } from './Investments';
 import { Splitter } from './Splitter';
 import { Vault } from './Vault';
+import { LiveAssistant } from './LiveAssistant';
 import { UserProfile, Transaction, RecurringExpense, BudgetCategory, SavingsGoal, Bill, SmartAlert, UserSettings, Asset, Liability, ForumPost, Challenge, Badge, Investment, SplitExpense, StoredDocument, LinkedAccount } from '../types';
 import { TRANSACTIONS, INITIAL_BILLS, INITIAL_ASSETS, INITIAL_LIABILITIES, INITIAL_FORUM_POSTS, INITIAL_CHALLENGES, EARNED_BADGES, INITIAL_INVESTMENTS, INITIAL_SPLIT_EXPENSES } from '../constants';
 
@@ -34,6 +35,7 @@ const useLocalStorage = <T,>(key: string, initialValue: T): [T, React.Dispatch<R
 export const MainApp: React.FC<MainAppProps> = ({ userProfile, onSignOut, initialView = 'dashboard' }) => {
   const [view, setView] = useState<View>(initialView);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const [isLiveAssistantOpen, setIsLiveAssistantOpen] = useState(false);
 
   useEffect(() => {
     const handleOnline = () => setIsOffline(false);
@@ -117,10 +119,11 @@ export const MainApp: React.FC<MainAppProps> = ({ userProfile, onSignOut, initia
 
   return (
     <div className="min-h-screen text-slate-800 dark:text-slate-200 bg-slate-50 dark:bg-navy-950 transition-colors duration-300">
-      <Header view={view} setView={setView as any} onSignOut={onSignOut} isOffline={isOffline} />
+      <Header view={view} setView={setView as any} onSignOut={onSignOut} isOffline={isOffline} onToggleLiveAssistant={() => setIsLiveAssistantOpen(true)} />
       <main className="container mx-auto p-4 sm:p-6 lg:p-8">
         {renderContent()}
       </main>
+      {isLiveAssistantOpen && <LiveAssistant onClose={() => setIsLiveAssistantOpen(false)} />}
     </div>
   );
 };
