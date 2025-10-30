@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { SavingsGoal } from '../types';
 import { Card } from './Card';
@@ -6,13 +5,13 @@ import { TargetIcon, PlusCircleIcon, PencilIcon, TrashIcon, XIcon } from './Icon
 
 interface GoalsProps {
     goals: SavingsGoal[];
-    setGoals: React.Dispatch<React.SetStateAction<SavingsGoal[]>>;
+    onSaveGoal: (goal: SavingsGoal) => void;
+    onDeleteGoal: (id: string) => void;
 }
 
 const ProgressBar: React.FC<{ value: number }> = ({ value }) => (
-    <div className="w-full bg-slate-200 dark:bg-navy-800 rounded-full h-4">
-        <div className="bg-soft-green-500 h-4 rounded-full text-white text-xs flex items-center justify-center" style={{ width: `${Math.min(value, 100)}%` }}>
-            {value.toFixed(0)}%
+    <div className="w-full bg-secondary rounded-full h-3">
+        <div className="bg-primary h-3 rounded-full text-white text-xs flex items-center justify-center transition-all duration-500" style={{ width: `${Math.min(value, 100)}%` }}>
         </div>
     </div>
 );
@@ -23,8 +22,9 @@ const GoalModal: React.FC<{
     onSave: (goal: SavingsGoal) => void;
 }> = ({ goal, onClose, onSave }) => {
     const [currentGoal, setCurrentGoal] = useState<SavingsGoal>(
-        goal || { name: '', targetAmount: 1000, currentAmount: 0, targetDate: '' }
+        goal || { id: '', name: '', targetAmount: 1000, currentAmount: 0, targetDate: '' }
     );
+    const inputClasses = "w-full mt-1 p-2 rounded-lg bg-input border border-border focus:ring-1 focus:ring-ring outline-none";
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -37,34 +37,38 @@ const GoalModal: React.FC<{
     };
 
     return (
-        <div className="fixed inset-0 bg-black/50 z-40 flex items-center justify-center p-4" onClick={onClose}>
-            <div className="bg-white dark:bg-navy-900 rounded-2xl shadow-lg w-full max-w-md" onClick={e => e.stopPropagation()}>
-                <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                    <div className="flex justify-between items-center">
-                        <h3 className="text-xl font-bold font-heading">{goal ? 'Edit Goal' : 'Create New Goal'}</h3>
-                        <button type="button" onClick={onClose} className="p-1 rounded-full hover:bg-slate-200 dark:hover:bg-navy-700"><XIcon className="h-5 w-5"/></button>
-                    </div>
-                    <div>
-                        <label className="text-sm font-medium">Goal Name</label>
-                        <input type="text" name="name" value={currentGoal.name} onChange={handleChange} className="w-full mt-1 p-2 rounded-lg bg-slate-100 dark:bg-navy-800" required />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="text-sm font-medium">Current Amount ($)</label>
-                            <input type="number" name="currentAmount" value={currentGoal.currentAmount} onChange={handleChange} className="w-full mt-1 p-2 rounded-lg bg-slate-100 dark:bg-navy-800" required />
-                        </div>
-                        <div>
-                            <label className="text-sm font-medium">Target Amount ($)</label>
-                            <input type="number" name="targetAmount" value={currentGoal.targetAmount} onChange={handleChange} className="w-full mt-1 p-2 rounded-lg bg-slate-100 dark:bg-navy-800" required />
+        <div className="fixed inset-0 bg-black/60 z-40 flex items-center justify-center p-4" onClick={onClose}>
+            <div className="bg-card text-card-foreground rounded-xl border border-border w-full max-w-md" onClick={e => e.stopPropagation()}>
+                <form onSubmit={handleSubmit}>
+                     <div className="p-6 border-b border-border">
+                        <div className="flex justify-between items-center">
+                            <h3 className="text-xl font-bold font-heading">{goal ? 'Edit Goal' : 'Create New Goal'}</h3>
+                            <button type="button" onClick={onClose} className="p-1 rounded-full hover:bg-accent"><XIcon className="h-5 w-5"/></button>
                         </div>
                     </div>
-                    <div>
-                        <label className="text-sm font-medium">Target Date</label>
-                        <input type="date" name="targetDate" value={currentGoal.targetDate} onChange={handleChange} className="w-full mt-1 p-2 rounded-lg bg-slate-100 dark:bg-navy-800" required />
+                    <div className="p-6 space-y-4">
+                        <div>
+                            <label className="text-sm font-medium">Goal Name</label>
+                            <input type="text" name="name" value={currentGoal.name} onChange={handleChange} className={inputClasses} required />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="text-sm font-medium">Current Amount ($)</label>
+                                <input type="number" name="currentAmount" value={currentGoal.currentAmount} onChange={handleChange} className={inputClasses} required />
+                            </div>
+                            <div>
+                                <label className="text-sm font-medium">Target Amount ($)</label>
+                                <input type="number" name="targetAmount" value={currentGoal.targetAmount} onChange={handleChange} className={inputClasses} required />
+                            </div>
+                        </div>
+                        <div>
+                            <label className="text-sm font-medium">Target Date</label>
+                            <input type="date" name="targetDate" value={currentGoal.targetDate} onChange={handleChange} className={inputClasses} required />
+                        </div>
                     </div>
-                    <div className="flex justify-end gap-3 pt-4">
-                        <button type="button" onClick={onClose} className="py-2 px-4 rounded-lg bg-slate-200 dark:bg-navy-700 hover:bg-slate-300 dark:hover:bg-navy-600 font-medium">Cancel</button>
-                        <button type="submit" className="py-2 px-4 rounded-lg text-white bg-soft-green-600 hover:bg-soft-green-700 font-medium">Save Goal</button>
+                    <div className="p-6 bg-secondary/50 border-t border-border flex justify-end gap-3 rounded-b-xl">
+                        <button type="button" onClick={onClose} className="py-2 px-4 rounded-lg bg-secondary text-secondary-foreground hover:bg-muted font-medium">Cancel</button>
+                        <button type="submit" className="py-2 px-4 rounded-lg text-primary-foreground bg-primary hover:bg-primary/90 font-medium">Save Goal</button>
                     </div>
                 </form>
             </div>
@@ -72,7 +76,7 @@ const GoalModal: React.FC<{
     );
 };
 
-export const Goals: React.FC<GoalsProps> = ({ goals, setGoals }) => {
+export const Goals: React.FC<GoalsProps> = ({ goals, onSaveGoal, onDeleteGoal }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedGoal, setSelectedGoal] = useState<SavingsGoal | null>(null);
 
@@ -87,28 +91,24 @@ export const Goals: React.FC<GoalsProps> = ({ goals, setGoals }) => {
     };
 
     const handleSaveGoal = (goal: SavingsGoal) => {
-        if (goal.id) {
-            setGoals(goals.map(g => g.id === goal.id ? goal : g));
-        } else {
-            setGoals([...goals, { ...goal, id: `goal-${Date.now()}` }]);
-        }
+        onSaveGoal(goal);
         handleCloseModal();
     };
     
     const handleDeleteGoal = (id: string) => {
         if(window.confirm("Are you sure you want to delete this goal?")) {
-            setGoals(goals.filter(g => g.id !== id));
+            onDeleteGoal(id);
         }
     };
 
     return (
         <>
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex flex-wrap justify-between items-center gap-4 mb-6">
                 <div>
                     <h2 className="text-3xl font-bold font-heading">Savings Goals</h2>
-                    <p className="text-slate-500 text-lg">Track and manage your financial targets.</p>
+                    <p className="text-muted-foreground text-lg">Track and manage your financial targets.</p>
                 </div>
-                <button onClick={() => handleOpenModal()} className="flex items-center gap-2 py-2 px-4 rounded-lg text-white bg-soft-green-600 hover:bg-soft-green-700 font-medium transition-transform hover:scale-105">
+                <button onClick={() => handleOpenModal()} className="flex items-center gap-2 py-2 px-4 rounded-lg text-white bg-primary hover:bg-primary/90 font-medium transition-transform hover:scale-105">
                     <PlusCircleIcon className="h-5 w-5" />
                     <span>New Goal</span>
                 </button>
@@ -122,27 +122,33 @@ export const Goals: React.FC<GoalsProps> = ({ goals, setGoals }) => {
                             <div className="flex justify-between items-start">
                                 <div>
                                     <h3 className="text-xl font-bold font-heading">{goal.name}</h3>
-                                    <p className="text-sm text-slate-400">Target Date: {goal.targetDate}</p>
+                                    <p className="text-sm text-muted-foreground">Target: {goal.targetDate}</p>
                                 </div>
                                 <div className="flex gap-1">
-                                    <button onClick={() => handleOpenModal(goal)} className="p-1.5 text-slate-500 hover:text-blue-500"><PencilIcon className="h-4 w-4" /></button>
-                                    <button onClick={() => handleDeleteGoal(goal.id!)} className="p-1.5 text-slate-500 hover:text-red-500"><TrashIcon className="h-4 w-4" /></button>
+                                    <button onClick={() => handleOpenModal(goal)} className="p-1.5 text-muted-foreground hover:text-primary"><PencilIcon className="h-4 w-4" /></button>
+                                    <button onClick={() => handleDeleteGoal(goal.id!)} className="p-1.5 text-muted-foreground hover:text-destructive"><TrashIcon className="h-4 w-4" /></button>
                                 </div>
                             </div>
-                            <div className="flex-grow my-4">
+                            <div className="flex-grow my-4 space-y-2">
                                 <ProgressBar value={progress} />
+                                <div className="text-sm flex justify-between">
+                                    <span className="font-semibold text-primary">{progress.toFixed(0)}%</span>
+                                    <span className="text-muted-foreground">
+                                       ${(goal.targetAmount - goal.currentAmount).toLocaleString()} left
+                                    </span>
+                                </div>
                             </div>
-                            <div className="text-center font-semibold">
-                                <span className="text-soft-green-500">${goal.currentAmount.toLocaleString()}</span> / <span>${goal.targetAmount.toLocaleString()}</span>
+                            <div className="text-center font-semibold text-lg">
+                                <span className="text-primary">${goal.currentAmount.toLocaleString()}</span> / <span className="text-muted-foreground">${goal.targetAmount.toLocaleString()}</span>
                             </div>
                         </Card>
                     );
                 })}
 
                 {goals.length === 0 && (
-                     <div className="md:col-span-2 lg:col-span-3 text-center text-slate-500 py-24 border-2 border-dashed border-slate-200 dark:border-navy-800 rounded-lg">
-                        <TargetIcon className="h-16 w-16 mx-auto text-slate-400 mb-4" />
-                        <h3 className="font-semibold text-xl text-slate-600 dark:text-slate-300">No Savings Goals Yet</h3>
+                     <div className="md:col-span-2 lg:col-span-3 text-center text-muted-foreground py-24 border-2 border-dashed border-border rounded-lg">
+                        <TargetIcon className="h-16 w-16 mx-auto text-muted-foreground/50 mb-4" />
+                        <h3 className="font-semibold text-xl text-foreground">No Savings Goals Yet</h3>
                         <p>Click "New Goal" to start planning for your future.</p>
                     </div>
                 )}

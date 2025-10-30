@@ -110,29 +110,29 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({
   const parsedHtml = (text: string) => ({ __html: marked(text, { breaks: true }) });
 
   return (
-    <div className="h-[calc(100vh-165px)] md:h-[calc(100vh-120px)] flex flex-col max-w-4xl mx-auto bg-white dark:bg-navy-900 rounded-2xl shadow-lg">
+    <div className="h-[calc(100vh-165px)] md:h-[calc(100vh-120px)] flex flex-col max-w-4xl mx-auto bg-card text-card-foreground rounded-xl border border-border">
       <div className="flex-1 overflow-y-auto p-6 space-y-6">
         {messages.map((message) => (
           <div key={message.id} className={`flex items-start gap-4 ${message.sender === 'user' ? 'justify-end' : ''}`}>
-            {message.sender === 'ai' && <div className="flex-shrink-0 h-8 w-8 rounded-full bg-soft-green-500 flex items-center justify-center text-white"><BotIcon className="h-5 w-5" /></div>}
-            <div className={`max-w-md md:max-w-lg lg:max-w-xl p-4 rounded-2xl ${message.sender === 'user' ? 'bg-navy-700 text-white rounded-br-none' : 'bg-slate-100 dark:bg-navy-800 rounded-bl-none'}`}><div className="prose prose-sm dark:prose-invert max-w-none" dangerouslySetInnerHTML={parsedHtml(message.text)} /></div>
-            {message.sender === 'user' && <div className="flex-shrink-0 h-8 w-8 rounded-full bg-slate-200 dark:bg-navy-700 flex items-center justify-center"><UserIcon className="h-5 w-5" /></div>}
+            {message.sender === 'ai' && <div className="flex-shrink-0 h-8 w-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground"><BotIcon className="h-5 w-5" /></div>}
+            <div className={`max-w-md md:max-w-lg lg:max-w-xl p-4 rounded-2xl ${message.sender === 'user' ? 'bg-primary text-primary-foreground rounded-br-none' : 'bg-accent text-accent-foreground rounded-bl-none'}`}><div className="prose prose-sm dark:prose-invert max-w-none" dangerouslySetInnerHTML={parsedHtml(message.text)} /></div>
+            {message.sender === 'user' && <div className="flex-shrink-0 h-8 w-8 rounded-full bg-secondary flex items-center justify-center text-secondary-foreground"><UserIcon className="h-5 w-5" /></div>}
           </div>
         ))}
-         {isLoading && <div className="flex items-start gap-4"><div className="flex-shrink-0 h-8 w-8 rounded-full bg-soft-green-500 flex items-center justify-center text-white"><BotIcon className="h-5 w-5" /></div><div className="p-4 rounded-2xl bg-slate-100 dark:bg-navy-800 rounded-bl-none"><div className="flex items-center gap-2"><span className="h-2 w-2 bg-slate-400 rounded-full animate-bounce [animation-delay:-0.3s]"></span><span className="h-2 w-2 bg-slate-400 rounded-full animate-bounce [animation-delay:-0.15s]"></span><span className="h-2 w-2 bg-slate-400 rounded-full animate-bounce"></span></div></div></div>}
+         {isLoading && <div className="flex items-start gap-4"><div className="flex-shrink-0 h-8 w-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground"><BotIcon className="h-5 w-5" /></div><div className="p-4 rounded-2xl bg-accent rounded-bl-none"><div className="flex items-center gap-2"><span className="h-2 w-2 bg-muted-foreground rounded-full animate-bounce [animation-delay:-0.3s]"></span><span className="h-2 w-2 bg-muted-foreground rounded-full animate-bounce [animation-delay:-0.15s]"></span><span className="h-2 w-2 bg-muted-foreground rounded-full animate-bounce"></span></div></div></div>}
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="p-4 border-t border-slate-200 dark:border-navy-800">
+      <div className="p-4 border-t border-border">
         <div className="relative">
-          <input type="text" value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()} placeholder="Ask me anything or use the microphone..." className="w-full pl-24 pr-14 py-3 rounded-full bg-slate-100 dark:bg-navy-800 focus:ring-2 focus:ring-soft-green-500 focus:outline-none transition" disabled={isLoading} />
+          <input type="text" value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()} placeholder="Ask me anything or use the microphone..." className="w-full pl-24 pr-14 py-3 rounded-full bg-input border border-border focus:ring-2 focus:ring-ring focus:outline-none transition" disabled={isLoading} />
           <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
             <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileUpload} accept=".csv" />
-            <button onClick={() => fileInputRef.current?.click()} className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-navy-700" aria-label="Upload CSV" disabled={isLoading}><UploadIcon className="h-6 w-6 text-slate-500 dark:text-slate-400" /></button>
-            {isSpeechRecognitionSupported && <button onClick={toggleListening} className={`p-2 rounded-full ${isListening ? 'bg-red-500/20' : 'hover:bg-slate-200 dark:hover:bg-navy-700'}`} aria-label="Use Microphone" disabled={isLoading}><MicrophoneIcon className={`h-6 w-6 ${isListening ? 'text-red-500' : 'text-slate-500 dark:text-slate-400'}`} /></button>}
+            <button onClick={() => fileInputRef.current?.click()} className="p-2 rounded-full hover:bg-accent" aria-label="Upload CSV" disabled={isLoading}><UploadIcon className="h-6 w-6 text-muted-foreground" /></button>
+            {isSpeechRecognitionSupported && <button onClick={toggleListening} className={`p-2 rounded-full ${isListening ? 'bg-destructive/20' : 'hover:bg-accent'}`} aria-label="Use Microphone" disabled={isLoading}><MicrophoneIcon className={`h-6 w-6 ${isListening ? 'text-destructive' : 'text-muted-foreground'}`} /></button>}
           </div>
           <div className="absolute right-3 top-1/2 -translate-y-1/2">
-            <button onClick={() => handleSendMessage()} className="p-2 rounded-full bg-soft-green-500 text-white hover:bg-soft-green-600 disabled:bg-slate-300 dark:disabled:bg-navy-700" aria-label="Send message" disabled={isLoading || !input.trim()}><SendIcon className="h-6 w-6" /></button>
+            <button onClick={() => handleSendMessage()} className="p-2 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground" aria-label="Send message" disabled={isLoading || !input.trim()}><SendIcon className="h-6 w-6" /></button>
           </div>
         </div>
       </div>

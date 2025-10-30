@@ -9,9 +9,9 @@ interface OnboardingProps {
 const ProgressBar: React.FC<{ step: number; totalSteps: number }> = ({ step, totalSteps }) => {
   const percentage = (step / totalSteps) * 100;
   return (
-    <div className="w-full bg-slate-200 dark:bg-navy-800 rounded-full h-2 mb-8">
+    <div className="w-full bg-secondary rounded-full h-2 mb-8">
       <div
-        className="bg-soft-green-500 h-2 rounded-full transition-all duration-500"
+        className="bg-primary h-2 rounded-full transition-all duration-500"
         style={{ width: `${percentage}%` }}
       />
     </div>
@@ -30,6 +30,9 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
   });
   const [verificationStatus, setVerificationStatus] = useState<'idle' | 'verifying' | 'verified' | 'error'>('idle');
   const [verificationMessage, setVerificationMessage] = useState<string | null>(null);
+
+  // FIX: Added a default settings object to provide currency information during onboarding.
+  const [settings] = useState({ currency: 'USD' });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -98,9 +101,9 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
     if (verificationStatus === 'idle') return null;
 
     const styles = {
-        verifying: { text: 'text-slate-500', icon: <div className="h-4 w-4 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" /> },
-        verified: { text: 'text-soft-green-600', icon: <CheckCircleIcon className="h-4 w-4" /> },
-        error: { text: 'text-red-500', icon: <XCircleIcon className="h-4 w-4" /> },
+        verifying: { text: 'text-muted-foreground', icon: <div className="h-4 w-4 border-2 border-border border-t-transparent rounded-full animate-spin" /> },
+        verified: { text: 'text-primary', icon: <CheckCircleIcon className="h-4 w-4" /> },
+        error: { text: 'text-destructive', icon: <XCircleIcon className="h-4 w-4" /> },
     }
     const currentStyle = styles[verificationStatus];
 
@@ -113,75 +116,76 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
   }
 
   const renderStep = () => {
+    const inputClasses = "w-full pl-10 pr-4 py-3 rounded-lg bg-input border border-border focus:ring-2 focus:ring-ring outline-none";
     switch (step) {
       case 1:
         return (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold font-heading text-slate-800 dark:text-slate-100">Let's get to know you</h2>
-            <p className="text-slate-500 dark:text-slate-400">First, tell us a bit about yourself.</p>
+            <h2 className="text-2xl font-bold font-heading text-foreground">Let's get to know you</h2>
+            <p className="text-muted-foreground">First, tell us a bit about yourself.</p>
             <div>
-              <label htmlFor="fullName" className="text-sm font-medium text-slate-700 dark:text-slate-300">Full Name</label>
+              <label htmlFor="fullName" className="text-sm font-medium text-foreground">Full Name</label>
               <div className="relative mt-2">
                 <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                   <UserIcon className="h-5 w-5 text-slate-400" />
+                   <UserIcon className="h-5 w-5 text-muted-foreground" />
                 </div>
-                <input id="fullName" name="fullName" type="text" value={profile.fullName} onChange={handleChange} required className="w-full pl-10 pr-4 py-3 rounded-lg bg-slate-100 dark:bg-navy-800 focus:ring-2 focus:ring-soft-green-500 outline-none" placeholder="John Doe"/>
+                <input id="fullName" name="fullName" type="text" value={profile.fullName} onChange={handleChange} required className={inputClasses} placeholder="John Doe"/>
               </div>
             </div>
              <div>
-              <label htmlFor="dateOfBirth" className="text-sm font-medium text-slate-700 dark:text-slate-300">Date of Birth</label>
+              <label htmlFor="dateOfBirth" className="text-sm font-medium text-foreground">Date of Birth</label>
               <div className="relative mt-2">
                 <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                   <CalendarIcon className="h-5 w-5 text-slate-400" />
+                   <CalendarIcon className="h-5 w-5 text-muted-foreground" />
                 </div>
-                <input id="dateOfBirth" name="dateOfBirth" type="date" value={profile.dateOfBirth} onChange={handleChange} required className="w-full pl-10 pr-4 py-3 rounded-lg bg-slate-100 dark:bg-navy-800 focus:ring-2 focus:ring-soft-green-500 outline-none"/>
+                <input id="dateOfBirth" name="dateOfBirth" type="date" value={profile.dateOfBirth} onChange={handleChange} required className={inputClasses}/>
               </div>
             </div>
              <div>
-              <label htmlFor="country" className="text-sm font-medium text-slate-700 dark:text-slate-300">Country</label>
+              <label htmlFor="country" className="text-sm font-medium text-foreground">Country</label>
                 <div className="flex items-center gap-2 mt-2">
                     <div className="relative flex-grow">
                         <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                           <GlobeIcon className="h-5 w-5 text-slate-400" />
+                           <GlobeIcon className="h-5 w-5 text-muted-foreground" />
                         </div>
-                        <input id="country" name="country" type="text" value={profile.country} onChange={handleChange} required className="w-full pl-10 pr-4 py-3 rounded-lg bg-slate-100 dark:bg-navy-800 focus:ring-2 focus:ring-soft-green-500 outline-none" placeholder="United States"/>
+                        <input id="country" name="country" type="text" value={profile.country} onChange={handleChange} required className={inputClasses} placeholder="United States"/>
                     </div>
                     <button 
                         type="button" 
                         onClick={handleVerifyLocation} 
                         disabled={verificationStatus === 'verifying' || verificationStatus === 'verified'}
-                        className="py-3 px-4 rounded-lg bg-navy-700 text-white hover:bg-navy-600 disabled:bg-slate-300 dark:disabled:bg-navy-700 transition flex items-center gap-2"
+                        className="py-3 px-4 rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/80 disabled:bg-muted transition flex items-center gap-2"
                     >
                         <MapPinIcon className="h-5 w-5" />
-                        <span className="hidden sm:inline">Verify Location</span>
+                        <span className="hidden sm:inline">Verify</span>
                     </button>
                 </div>
                 <VerificationStatus />
             </div>
-            <button onClick={nextStep} className="w-full py-3 px-4 rounded-lg text-white bg-soft-green-600 hover:bg-soft-green-700 font-medium">Continue</button>
+            <button onClick={nextStep} className="w-full py-3 px-4 rounded-lg text-primary-foreground bg-primary hover:bg-primary/90 font-medium">Continue</button>
           </div>
         );
       case 2:
         return (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold font-heading text-slate-800 dark:text-slate-100">Your Financial Profile</h2>
-            <p className="text-slate-500 dark:text-slate-400">This helps us tailor our advice for you.</p>
+            <h2 className="text-2xl font-bold font-heading text-foreground">Your Financial Profile</h2>
+            <p className="text-muted-foreground">This helps us tailor our advice for you.</p>
             <div>
-              <label htmlFor="monthlyIncome" className="text-sm font-medium text-slate-700 dark:text-slate-300">Monthly Income (USD)</label>
+              <label htmlFor="monthlyIncome" className="text-sm font-medium text-foreground">Monthly Income ({settings.currency})</label>
                <div className="relative mt-2">
                 <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                   <DollarIcon className="h-5 w-5 text-slate-400" />
+                   <DollarIcon className="h-5 w-5 text-muted-foreground" />
                 </div>
-                 <input id="monthlyIncome" name="monthlyIncome" type="number" value={profile.monthlyIncome} onChange={handleChange} required className="w-full pl-10 pr-4 py-3 rounded-lg bg-slate-100 dark:bg-navy-800 focus:ring-2 focus:ring-soft-green-500 outline-none" placeholder="e.g., 5000" />
+                 <input id="monthlyIncome" name="monthlyIncome" type="number" value={profile.monthlyIncome} onChange={handleChange} required className={inputClasses} placeholder="e.g., 5000" />
                </div>
             </div>
             <div>
-              <label htmlFor="financialGoal" className="text-sm font-medium text-slate-700 dark:text-slate-300">Primary Financial Goal</label>
+              <label htmlFor="financialGoal" className="text-sm font-medium text-foreground">Primary Financial Goal</label>
                <div className="relative mt-2">
                 <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                   <TargetIcon className="h-5 w-5 text-slate-400" />
+                   <TargetIcon className="h-5 w-5 text-muted-foreground" />
                 </div>
-                 <select id="financialGoal" name="financialGoal" value={profile.financialGoal} onChange={handleChange} required className="w-full pl-10 pr-4 py-3 rounded-lg bg-slate-100 dark:bg-navy-800 appearance-none focus:ring-2 focus:ring-soft-green-500 outline-none">
+                 <select id="financialGoal" name="financialGoal" value={profile.financialGoal} onChange={handleChange} required className={`${inputClasses} appearance-none`}>
                     <option value="" disabled>Select a goal</option>
                     <option value="save_big">Save for a big purchase</option>
                     <option value="invest">Invest for retirement</option>
@@ -191,18 +195,18 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                </div>
             </div>
             <div className="flex gap-4">
-                <button onClick={prevStep} className="w-full py-3 px-4 rounded-lg bg-slate-200 dark:bg-navy-700 hover:bg-slate-300 dark:hover:bg-navy-600 font-medium">Back</button>
-                <button onClick={nextStep} className="w-full py-3 px-4 rounded-lg text-white bg-soft-green-600 hover:bg-soft-green-700 font-medium">Continue</button>
+                <button onClick={prevStep} className="w-full py-3 px-4 rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/90 font-medium">Back</button>
+                <button onClick={nextStep} className="w-full py-3 px-4 rounded-lg text-primary-foreground bg-primary hover:bg-primary/90 font-medium">Continue</button>
             </div>
           </div>
         );
       case 3:
         return (
             <div className="text-center">
-                <CheckCircleIcon className="h-16 w-16 text-soft-green-500 mx-auto mb-4" />
-                <h2 className="text-2xl font-bold font-heading text-slate-800 dark:text-slate-100">You're All Set!</h2>
-                <p className="text-slate-500 dark:text-slate-400 mt-2">Your profile is complete. Let's set up the foundation of your budget.</p>
-                <button onClick={handleComplete} className="w-full mt-8 py-3 px-4 rounded-lg text-white bg-soft-green-600 hover:bg-soft-green-700 font-medium">Go to Financial Hub</button>
+                <CheckCircleIcon className="h-16 w-16 text-primary mx-auto mb-4" />
+                <h2 className="text-2xl font-bold font-heading text-foreground">You're All Set!</h2>
+                <p className="text-muted-foreground mt-2">Your profile is complete. Let's set up the foundation of your budget.</p>
+                <button onClick={handleComplete} className="w-full mt-8 py-3 px-4 rounded-lg text-primary-foreground bg-primary hover:bg-primary/90 font-medium">Go to Financial Hub</button>
             </div>
         )
       default:
@@ -211,13 +215,13 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-navy-950 p-4 transition-colors duration-300">
+    <div className="flex items-center justify-center min-h-screen bg-background p-4 transition-colors duration-300">
       <div className="w-full max-w-md">
          <div className="flex flex-col items-center mb-6">
-            <LogoIcon className="h-12 w-12 text-soft-green-500" />
-            <h1 className="text-2xl font-bold font-heading mt-2 text-slate-900 dark:text-white">Welcome to SmartFinance</h1>
+            <LogoIcon className="h-12 w-12 text-primary" />
+            <h1 className="text-2xl font-bold font-heading mt-2 text-foreground">Welcome to SmartFinance</h1>
           </div>
-        <div className="bg-white dark:bg-navy-900 rounded-2xl shadow-lg p-8">
+        <div className="bg-card text-card-foreground rounded-xl border border-border p-8">
           <ProgressBar step={step} totalSteps={3} />
           {renderStep()}
         </div>

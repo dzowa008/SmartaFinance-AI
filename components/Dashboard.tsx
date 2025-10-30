@@ -1,96 +1,210 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card } from './Card';
-import { HISTORICAL_DATA } from '../constants';
-import { BudgetCategory, SavingsGoal, SmartAlert, Transaction, Bill, RecurringExpense, UserSettings, Asset, Liability, Challenge, Badge, Investment, FinancialPersonality } from '../types';
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
-import { BellIcon, WarningIcon, InfoIcon, CheckCircleIcon, CheckIcon, XIcon, ClockIcon, ClipboardListIcon, BanknotesIcon, TrendingUpIcon, TrendingDownIcon, ScaleIcon, ArrowUpCircleIcon, ArrowDownCircleIcon, SparklesIcon, TrophyIcon, PersonalityIcon, MapPinIcon, GlobeIcon } from './Icons';
-import { generateAIInsights, scanForFraud, determineFinancialPersonality, generateSmartRecommendations, analyzeLocationSpending, generateSpendingForecast, generateTravelSummary } from '../services/geminiService';
+import { UserProfile, SavingsGoal, Transaction, Bill, RecurringExpense, UserSettings, Investment } from '../types';
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts';
+import { CheckCircleIcon, CheckIcon, XIcon, ClockIcon, BanknotesIcon, ArrowUpCircleIcon, ArrowDownCircleIcon, ScaleIcon, SparklesIcon, XCircleIcon } from './Icons';
+import { generateAIInsights } from '../services/geminiService';
 import { TransactionAdvisor } from './TransactionAdvisor';
 
-const AnimatedNumber: React.FC<{ value: number, settings: UserSettings }> = ({ value, settings }) => { /* ... existing code ... */  const [currentValue, setCurrentValue] = useState(0); useEffect(() => { const timer = setInterval(() => { setCurrentValue(v => { const newV = v + (value - v) / 10; if (Math.abs(value - newV) < 0.01) { clearInterval(timer); return value; } return newV; }); }, 20); return () => clearInterval(timer); }, [value]); return <span>{currentValue.toLocaleString('en-US', { style: 'currency', currency: settings.currency })}</span>; };
-const SummaryCards: React.FC<{ bankAccountBalance: number; monthlyIncome: number; totalRecurringExpenses: number; availableForBudget: number; settings: UserSettings; }> = ({ bankAccountBalance, monthlyIncome, totalRecurringExpenses, availableForBudget, settings }) => ( <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"> <Card className="flex items-start gap-4"><div className="bg-blue-100 dark:bg-blue-500/10 p-3 rounded-lg"><BanknotesIcon className="h-6 w-6 text-blue-500" /></div><div><h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Bank Account Balance</h3><p className="text-2xl font-bold font-heading text-navy-800 dark:text-white mt-1"><AnimatedNumber value={bankAccountBalance} settings={settings} /></p></div></Card> <Card className="flex items-start gap-4"><div className="bg-soft-green-100 dark:bg-soft-green-500/10 p-3 rounded-lg"><TrendingUpIcon className="h-6 w-6 text-soft-green-500" /></div><div><h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Monthly Income</h3><p className="text-2xl font-bold font-heading text-soft-green-600 dark:text-soft-green-500 mt-1"><AnimatedNumber value={monthlyIncome} settings={settings} /></p></div></Card> <Card className="flex items-start gap-4"><div className="bg-red-100 dark:bg-red-500/10 p-3 rounded-lg"><TrendingDownIcon className="h-6 w-6 text-red-500" /></div><div><h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Fixed Expenses</h3><p className="text-2xl font-bold font-heading text-red-500 mt-1"><AnimatedNumber value={totalRecurringExpenses} settings={settings} /></p></div></Card> <Card className="flex items-start gap-4"><div className="bg-indigo-100 dark:bg-indigo-500/10 p-3 rounded-lg"><ScaleIcon className="h-6 w-6 text-indigo-500" /></div><div><h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Available for Budget</h3><p className="text-2xl font-bold font-heading text-indigo-500 dark:text-indigo-400 mt-1"><AnimatedNumber value={availableForBudget} settings={settings} /></p></div></Card> </div> );
-const IncomeExpenseTrendChart = () => ( <Card><h3 className="text-lg font-semibold font-heading mb-4">Income vs. Expenses Trend</h3><div className="h-80"><ResponsiveContainer width="100%" height="100%"><LineChart data={HISTORICAL_DATA} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}><CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} /><XAxis dataKey="month" tick={{ fill: 'currentColor', fontSize: 12 }} /><YAxis tick={{ fill: 'currentColor', fontSize: 12 }} tickFormatter={(value) => `$${value/1000}k`} /><Tooltip contentStyle={{ backgroundColor: 'rgba(30, 41, 59, 0.9)', borderColor: '#334155', borderRadius: '0.5rem' }}/><Line type="monotone" dataKey="income" stroke="#22c55e" strokeWidth={2} name="Income" /><Line type="monotone" dataKey="expenses" stroke="#ef4444" strokeWidth={2} name="Expenses" /></LineChart></ResponsiveContainer></div></Card> );
-const NetWorthSummary: React.FC<{ assets: Asset[], liabilities: Liability[], settings: UserSettings, setView: (view: any) => void }> = ({ assets, liabilities, settings, setView }) => { const totalAssets = assets.reduce((s, a) => s + a.value, 0); const totalLiabilities = liabilities.reduce((s, l) => s + l.amount, 0); const netWorth = totalAssets - totalLiabilities; return ( <Card><div className="flex justify-between items-center mb-4"><h3 className="text-lg font-semibold font-heading">Net Worth</h3><button onClick={() => setView('netWorth')} className="text-sm font-medium text-soft-green-600 hover:underline">Manage</button></div><p className="text-3xl font-bold font-heading text-blue-500 mb-2">{netWorth.toLocaleString('en-US', { style: 'currency', currency: settings.currency })}</p><div className="flex justify-between text-sm"><span className="text-soft-green-600">Assets: ${totalAssets.toLocaleString()}</span><span className="text-red-500">Liabilities: ${totalLiabilities.toLocaleString()}</span></div></Card> ); };
-const RecentTransactions: React.FC<{ transactions: Transaction[] }> = ({ transactions }) => ( <Card><h3 className="text-lg font-semibold font-heading mb-4">Recent Transactions</h3><ul className="space-y-4">{transactions.slice(0, 5).map(tx => (<li key={tx.id} className="flex items-center gap-3"><div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${tx.type === 'income' ? 'bg-soft-green-100 dark:bg-soft-green-500/10' : 'bg-red-100 dark:bg-red-500/10'}`}>{tx.type === 'income' ? <ArrowUpCircleIcon className="w-5 h-5 text-soft-green-500" /> : <ArrowDownCircleIcon className="w-5 h-5 text-red-500" />}</div><div className="flex-grow"><p className="font-semibold">{tx.description}</p><p className="text-sm text-slate-500 dark:text-slate-400">{tx.category}</p></div><p className={`font-bold ${tx.type === 'income' ? 'text-soft-green-600' : 'text-navy-800 dark:text-white'}`}>{tx.type === 'income' ? '+' : '-'}${tx.amount.toFixed(2)}</p></li>))}</ul></Card> );
-const AIInsights: React.FC<{transactions: Transaction[]}> = ({transactions}) => { const [insights, setInsights] = useState<string[]>([]); const [loading, setLoading] = useState(true); useEffect(() => { setLoading(true); generateAIInsights(transactions).then(res => { setInsights(res); setLoading(false); }); }, [transactions]); return (<Card><h3 className="text-lg font-semibold font-heading mb-4 flex items-center gap-2"><SparklesIcon className="h-5 w-5 text-soft-green-500" /><span>AI Insights</span></h3>{loading ? <div className="space-y-3 animate-pulse"><div className="h-4 bg-slate-200 dark:bg-navy-800 rounded-md w-5/6"></div><div className="h-4 bg-slate-200 dark:bg-navy-800 rounded-md w-full"></div></div> : <ul className="space-y-2 text-sm text-slate-600 dark:text-slate-300">{insights.map((insight, i) => (<li key={i} className="flex items-start gap-2"><span className="text-soft-green-500 mt-1">✓</span><span>{insight.replace(/[-*]\s*/, '')}</span></li>))}</ul>}</Card>); };
-const FinanceChallenges: React.FC<{ challenges: Challenge[], badges: Badge[], setChallenges: (challenges: Challenge[]) => void }> = ({ challenges, badges, setChallenges }) => { const handleComplete = (id: string) => setChallenges(challenges.map(c => c.id === id ? { ...c, isCompleted: true } : c)); return ( <Card><h3 className="text-lg font-semibold font-heading mb-4 flex items-center gap-2"><TrophyIcon className="h-5 w-5 text-yellow-500"/>Finance Challenges</h3><div className="space-y-3">{challenges.filter(c => !c.isCompleted).slice(0, 2).map(c => (<div key={c.id} className="p-3 bg-slate-100 dark:bg-navy-800 rounded-lg"><div className="flex justify-between items-start"><div><p className="font-semibold">{c.title}</p><p className="text-xs text-slate-500">{c.description}</p></div><button onClick={() => handleComplete(c.id)} className="p-1 rounded-full bg-soft-green-200 text-soft-green-700 hover:bg-soft-green-300"><CheckIcon className="h-4 w-4"/></button></div></div>))}</div><div className="mt-4"><p className="text-sm font-semibold">Badges:</p><div className="flex gap-2 mt-1">{badges.map(b => <span key={b.id} title={b.description} className="text-2xl cursor-help">{b.icon}</span>)}</div></div></Card> ); };
-const BillPayCenter: React.FC<{bills: Bill[], setBills: (bills: Bill[]) => void}> = ({bills, setBills}) => { const handleUpdateStatus = (billId: string, newStatus: Bill['status']) => setBills(bills.map(b => b.id === billId ? { ...b, status: newStatus } : b)); const statusStyles: { [key in Bill['status']]: { text: string; bg: string; icon?: React.FC<{className?: string}> } } = { 'Pending Approval': { text: 'text-yellow-600 dark:text-yellow-400', bg: 'bg-yellow-100 dark:bg-yellow-500/10', icon: WarningIcon }, 'Scheduled': { text: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-100 dark:bg-blue-500/10', icon: ClockIcon }, 'Paid': { text: 'text-soft-green-700 dark:text-soft-green-400', bg: 'bg-soft-green-100 dark:bg-soft-green-500/10', icon: CheckCircleIcon }, 'Declined': { text: 'text-red-600 dark:text-red-400', bg: 'bg-red-100 dark:bg-red-500/10', icon: XIcon } }; return (<Card><h3 className="text-lg font-semibold font-heading mb-4">Bill Pay Center</h3><ul className="space-y-4">{bills.slice(0, 4).map(bill => { const style = statusStyles[bill.status]; const Icon = style.icon; return (<li key={bill.id} className="flex flex-col sm:flex-row justify-between sm:items-center gap-3"><div className="flex-grow"><p className="font-semibold">{bill.name}</p><p className="text-sm text-slate-500 dark:text-slate-400">${bill.amount.toFixed(2)} due on {bill.dueDate}</p><span className={`inline-flex items-center gap-1.5 mt-1 text-xs font-medium px-2 py-0.5 rounded-full ${style.bg} ${style.text}`}>{Icon && <Icon className="h-3 w-3" />} {bill.status}</span></div>{bill.status === 'Pending Approval' && (<div className="flex items-center gap-2 flex-shrink-0"><button onClick={() => handleUpdateStatus(bill.id, 'Declined')} className="p-2 rounded-full bg-red-100 text-red-600 hover:bg-red-200"><XIcon className="h-4 w-4" /></button><button onClick={() => handleUpdateStatus(bill.id, 'Scheduled')} className="p-2 rounded-full bg-soft-green-100 text-soft-green-600 hover:bg-soft-green-200"><CheckIcon className="h-4 w-4" /></button></div>)}</li>); })}</ul></Card>); };
-const FinancialPersonality: React.FC<{tx: Transaction[], inc: number, goals: SavingsGoal[], inv: Investment[]}> = ({tx, inc, goals, inv}) => { const [p, setP] = useState<FinancialPersonality|null>(null); useEffect(() => { const exp = tx.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0); determineFinancialPersonality({spendRatio: inc>0?(exp/inc)*100:0, savingsRate: inc>0?((inc-exp)/inc)*100:0, investmentActivity: inv.length > 0 ? 'Active' : 'None', financialGoals: goals.map(g=>g.name).join(', ')}).then(setP); }, [tx,inc,goals,inv]); if(!p) return null; return <Card><h3 className="text-lg font-semibold font-heading mb-2 flex items-center gap-2"><PersonalityIcon className="h-5 w-5 text-indigo-500" />Your Financial Personality</h3><p className="font-bold text-indigo-500 text-xl">{p.type}</p><p className="text-sm text-slate-500 my-2">{p.description}</p><ul className="text-sm space-y-1">{p.recommendations.map((r,i)=><li key={i} className="flex items-start gap-2"><span className="text-indigo-500 mt-1">→</span>{r}</li>)}</ul></Card> };
-const AnomalyAlerts: React.FC<{tx: Transaction[]}> = ({tx}) => { const [a, setA] = useState<string|null>(null); useEffect(() => { scanForFraud(tx).then(res => { if(!res.toLowerCase().includes("no suspicious")) setA(res); }); }, [tx]); if(!a) return null; return <Card className="bg-red-500/10"><h3 className="font-semibold text-red-800 dark:text-red-300 flex items-center gap-2"><WarningIcon className="h-5 w-5" />Suspicious Activity Detected</h3><p className="text-sm text-red-700 dark:text-red-400 mt-2 whitespace-pre-wrap">{a}</p></Card> };
-const SmartRecommendations: React.FC<{tx: Transaction[], recExp: RecurringExpense[], assets: Asset[]}> = ({tx, recExp, assets}) => { const [r, setR] = useState<string[]>([]); useEffect(() => { const savingsAccts = assets.filter(a=>a.type==='Cash').map(a=>({name:a.name, balance:a.value})); generateSmartRecommendations({transactions:tx, savingsAccounts:savingsAccts, recurringExpenses:recExp}).then(setR); }, [tx, recExp, assets]); if(r.length===0) return null; return <Card><h3 className="text-lg font-semibold font-heading mb-4 flex items-center gap-2"><SparklesIcon className="h-5 w-5 text-soft-green-500" />Smart Recommendations</h3><ul className="space-y-2 text-sm text-slate-600 dark:text-slate-300">{r.map((rec, i) => (<li key={i} className="flex items-start gap-2"><span className="text-soft-green-500 mt-1">💡</span><span>{rec.replace(/[-*]\s*/, '')}</span></li>))}</ul></Card> };
-const LocationInsights: React.FC<{tx: Transaction[]}> = ({tx}) => { const [res, setRes] = useState<string|null>(null); const [loading, setLoading] = useState(false); const handleAnalyze = () => { setLoading(true); navigator.geolocation.getCurrentPosition(pos => { analyzeLocationSpending(pos.coords, tx).then(setRes).finally(()=>setLoading(false)); }, err => { setRes('Could not get location. Please enable location services.'); setLoading(false); }); }; return <Card><h3 className="text-lg font-semibold font-heading mb-4 flex items-center gap-2"><MapPinIcon className="h-5 w-5 text-blue-500" />Location-based Insights</h3>{!res ? <button onClick={handleAnalyze} disabled={loading} className="w-full py-2 px-4 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:bg-slate-400">{loading ? 'Analyzing...' : 'Analyze Local Spending'}</button> : <p className="text-sm">{res}</p>}</Card> };
+const AnimatedNumber: React.FC<{ value: number, settings: UserSettings }> = ({ value, settings }) => { const [currentValue, setCurrentValue] = useState(0); useEffect(() => { const timer = setInterval(() => { setCurrentValue(v => { const newV = v + (value - v) / 10; if (Math.abs(value - newV) < 0.01) { clearInterval(timer); return value; } return newV; }); }, 20); return () => clearInterval(timer); }, [value]); return <span>{currentValue.toLocaleString('en-US', { style: 'currency', currency: settings.currency })}</span>; };
 
-const SpendingForecastCard: React.FC<{monthlyIncome: number; transactions: Transaction[], settings: UserSettings}> = ({monthlyIncome, transactions, settings}) => {
-    const [forecast, setForecast] = useState<{forecast: number; explanation: string}|null>(null);
-    const [loading, setLoading] = useState(true);
-    useEffect(() => {
-        generateSpendingForecast(monthlyIncome, transactions).then(res => {
-            setForecast(res);
-            setLoading(false);
-        });
-    }, [monthlyIncome, transactions]);
-
-    if (loading) {
-        return <Card><div className="animate-pulse"><div className="h-5 w-3/4 bg-slate-200 dark:bg-navy-800 rounded"></div><div className="h-8 w-1/2 mt-2 bg-slate-200 dark:bg-navy-800 rounded"></div><div className="h-4 w-full mt-2 bg-slate-200 dark:bg-navy-800 rounded"></div></div></Card>
-    }
-
-    if (!forecast) return null;
-
-    return (
-        <Card>
-            <h3 className="text-lg font-semibold font-heading mb-2">Spending Forecast</h3>
-            <p className="text-3xl font-bold font-heading text-amber-500 mb-2">
-                {forecast.forecast.toLocaleString('en-US', { style: 'currency', currency: settings.currency, maximumFractionDigits: 0 })}
-            </p>
-            <p className="text-sm text-slate-500 dark:text-slate-400">{forecast.explanation}</p>
+const SummaryCards: React.FC<{ bankAccountBalance: number; monthlyIncome: number; totalRecurringExpenses: number; availableForBudget: number; settings: UserSettings; }> = ({ bankAccountBalance, monthlyIncome, totalRecurringExpenses, availableForBudget, settings }) => (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Card className="flex flex-col justify-between">
+             <div className="flex justify-between items-center">
+                <h3 className="text-sm font-medium text-muted-foreground">Bank Balance</h3>
+                <BanknotesIcon className="w-5 h-5 text-muted-foreground" />
+             </div>
+            <p className="text-3xl font-bold text-foreground mt-2"><AnimatedNumber value={bankAccountBalance} settings={settings} /></p>
         </Card>
-    );
-};
+        <Card className="flex flex-col justify-between">
+             <div className="flex justify-between items-center">
+                <h3 className="text-sm font-medium text-muted-foreground">Monthly Income</h3>
+                <ArrowUpCircleIcon className="w-5 h-5 text-primary" />
+             </div>
+            <p className="text-3xl font-bold text-primary mt-2"><AnimatedNumber value={monthlyIncome} settings={settings} /></p>
+        </Card>
+        <Card className="flex flex-col justify-between">
+             <div className="flex justify-between items-center">
+                <h3 className="text-sm font-medium text-muted-foreground">Fixed Expenses</h3>
+                <ArrowDownCircleIcon className="w-5 h-5 text-destructive" />
+             </div>
+            <p className="text-3xl font-bold text-destructive mt-2"><AnimatedNumber value={totalRecurringExpenses} settings={settings} /></p>
+        </Card>
+        <Card className="flex flex-col justify-between">
+             <div className="flex justify-between items-center">
+                <h3 className="text-sm font-medium text-muted-foreground">Budgetable</h3>
+                <ScaleIcon className="w-5 h-5 text-muted-foreground" />
+             </div>
+            <p className="text-3xl font-bold text-foreground mt-2"><AnimatedNumber value={availableForBudget} settings={settings} /></p>
+        </Card>
+    </div>
+);
 
-const TravelSummaryCard: React.FC<{transactions: Transaction[]}> = ({transactions}) => {
-    const [summary, setSummary] = useState<string|null>(null);
-    useEffect(() => {
-        generateTravelSummary(transactions).then(setSummary);
-    }, [transactions]);
-    
-    if (!summary || summary.toLowerCase().includes('no specific')) return null;
+const BillItem: React.FC<{ bill: Bill, onApprove: (id: string) => void, onDecline: (id: string) => void }> = ({ bill, onApprove, onDecline }) => {
+    const statusStyles = {
+        'Paid': { icon: CheckCircleIcon, text: 'text-primary', bg: 'bg-primary/10' },
+        'Scheduled': { icon: ClockIcon, text: 'text-blue-500', bg: 'bg-blue-500/10' },
+        'Pending Approval': { icon: ClockIcon, text: 'text-amber-500', bg: 'bg-amber-500/10' },
+        'Declined': { icon: XCircleIcon, text: 'text-destructive', bg: 'bg-destructive/10' },
+    };
+    const currentStatus = statusStyles[bill.status];
 
     return (
-        <Card className="bg-blue-500/10 border border-blue-500/20 col-span-12">
-            <div className="flex items-center gap-4">
-                <GlobeIcon className="h-8 w-8 text-blue-500"/>
-                <div>
-                    <h3 className="font-semibold text-blue-800 dark:text-blue-300">Travel Mode Summary</h3>
-                    <p className="text-sm text-blue-700 dark:text-blue-400 mt-1">{summary}</p>
-                </div>
+        <div className="flex items-center justify-between p-4 rounded-lg hover:bg-accent">
+            <div>
+                <p className="font-semibold">{bill.name}</p>
+                <p className="text-sm text-muted-foreground">Due: {bill.dueDate}</p>
             </div>
-        </Card>
+            <div className="flex items-center gap-4">
+                <span className="font-bold">${bill.amount.toFixed(2)}</span>
+                <span className={`flex items-center gap-1.5 text-xs font-semibold px-2 py-1 rounded-full ${currentStatus.bg} ${currentStatus.text}`}>
+                    <currentStatus.icon className="h-4 w-4" />
+                    {bill.status}
+                </span>
+                {bill.status === 'Pending Approval' && (
+                    <div className="flex gap-2">
+                        <button onClick={() => onApprove(bill.id)} className="p-1.5 rounded-full bg-primary/10 text-primary hover:bg-primary/20"><CheckIcon className="h-4 w-4"/></button>
+                        <button onClick={() => onDecline(bill.id)} className="p-1.5 rounded-full bg-destructive/10 text-destructive hover:bg-destructive/20"><XIcon className="h-4 w-4"/></button>
+                    </div>
+                )}
+            </div>
+        </div>
     );
 };
 
-interface DashboardProps { setView: (view: any) => void; monthlyIncome: number; recurringExpenses: RecurringExpense[]; transactions: Transaction[]; bills: Bill[]; setBills: (bills: Bill[]) => void; goals: SavingsGoal[]; alerts: SmartAlert[]; bankAccountBalance: number; settings: UserSettings; assets: Asset[]; liabilities: Liability[]; challenges: Challenge[]; badges: Badge[]; setChallenges: (challenges: Challenge[]) => void; investments: Investment[]; isOffline: boolean; }
+interface DashboardProps {
+  userProfile: UserProfile;
+  monthlyIncome: number;
+  recurringExpenses: RecurringExpense[];
+  transactions: Transaction[];
+  bills: Bill[];
+  setBills: (bills: Bill[]) => void;
+  goals: SavingsGoal[];
+  bankAccountBalance: number;
+  settings: UserSettings;
+  investments: Investment[];
+  isOffline: boolean;
+}
 
 export const Dashboard: React.FC<DashboardProps> = (props) => {
-  const totalRecurringExpenses = props.recurringExpenses.reduce((sum, exp) => sum + exp.amount, 0);
-  const availableForBudget = props.monthlyIncome - totalRecurringExpenses;
+    const { userProfile, monthlyIncome, recurringExpenses, transactions, bills, setBills, goals, bankAccountBalance, settings, isOffline } = props;
+    const [aiInsights, setAiInsights] = useState<string[]>([]);
+    
+    useEffect(() => {
+        if (transactions.length > 0 && !isOffline) {
+            generateAIInsights(transactions).then(setAiInsights);
+        } else if (isOffline) {
+            setAiInsights(["AI insights are unavailable in offline mode."]);
+        }
+    }, [transactions, isOffline]);
 
-  return (
-    <div className="grid grid-cols-12 gap-6">
-        <div className="col-span-12"><SummaryCards bankAccountBalance={props.bankAccountBalance} monthlyIncome={props.monthlyIncome} totalRecurringExpenses={totalRecurringExpenses} availableForBudget={availableForBudget} settings={props.settings}/></div>
-        {props.settings.travelMode && !props.isOffline && <TravelSummaryCard transactions={props.transactions} />}
-        <div className="col-span-12"><AnomalyAlerts tx={props.transactions} /></div>
-        <div className="col-span-12 lg:col-span-8"><IncomeExpenseTrendChart /></div>
-        <div className="col-span-12 lg:col-span-4 space-y-6">
-            <NetWorthSummary assets={props.assets} liabilities={props.liabilities} settings={props.settings} setView={props.setView} />
-            {/* Fix: Pass the `goals` prop as `savingsGoals` to satisfy TransactionAdvisor's prop requirements. */}
-            {!props.isOffline && <TransactionAdvisor {...props} savingsGoals={props.goals} />}
-            {!props.isOffline && <SpendingForecastCard monthlyIncome={props.monthlyIncome} transactions={props.transactions} settings={props.settings} />}
-            {!props.isOffline && <FinancialPersonality tx={props.transactions} inc={props.monthlyIncome} goals={props.goals} inv={props.investments} />}
+    const cashFlowData = useMemo(() => {
+        const months = Array.from({ length: 6 }, (_, i) => {
+            const d = new Date();
+            d.setMonth(d.getMonth() - i);
+            return { month: d.toLocaleString('default', { month: 'short' }), year: d.getFullYear(), income: 0, expenses: 0 };
+        }).reverse();
+
+        transactions.forEach(t => {
+            const txDate = new Date(t.date);
+            const month = txDate.toLocaleString('default', { month: 'short' });
+            const year = txDate.getFullYear();
+            const monthData = months.find(m => m.month === month && m.year === year);
+            if (monthData) {
+                if (t.type === 'income') monthData.income += t.amount;
+                else monthData.expenses += t.amount;
+            }
+        });
+        return months;
+    }, [transactions]);
+
+    const totalRecurringExpenses = recurringExpenses.reduce((sum, exp) => sum + exp.amount, 0);
+    const availableForBudget = monthlyIncome - totalRecurringExpenses;
+    const recentTransactions = transactions.slice(0, 5);
+
+    const handleBillAction = (id: string, status: 'Scheduled' | 'Declined') => {
+        setBills(bills.map(b => b.id === id ? { ...b, status } : b));
+    };
+
+    return (
+        <div className="space-y-6">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+                <div>
+                    <h2 className="text-3xl font-bold font-heading">Dashboard</h2>
+                    <p className="text-muted-foreground text-lg">Welcome back, {userProfile.fullName.split(' ')[0]}!</p>
+                </div>
+            </div>
+
+            <SummaryCards
+                bankAccountBalance={bankAccountBalance}
+                monthlyIncome={monthlyIncome}
+                totalRecurringExpenses={totalRecurringExpenses}
+                availableForBudget={availableForBudget}
+                settings={settings}
+            />
+            
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2">
+                    <Card>
+                        <h3 className="text-lg font-semibold font-heading mb-4">Cash Flow (Last 6 Months)</h3>
+                        <div className="h-80">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <LineChart data={cashFlowData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                                    <XAxis dataKey="month" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
+                                    <YAxis tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} tickFormatter={(val) => `$${val / 1000}k`} />
+                                    <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: 'var(--radius)' }}/>
+                                    <Legend />
+                                    <Line type="monotone" dataKey="income" stroke="hsl(var(--primary))" strokeWidth={2} name="Income" dot={false} />
+                                    <Line type="monotone" dataKey="expenses" stroke="hsl(var(--destructive))" strokeWidth={2} name="Expenses" dot={false} />
+                                </LineChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </Card>
+                </div>
+                <div className="space-y-6">
+                    <Card>
+                         <h3 className="text-lg font-semibold font-heading mb-4 flex items-center gap-2">
+                            <SparklesIcon className="h-5 w-5 text-primary" /> AI Insights
+                        </h3>
+                        {aiInsights.length > 0 ? (
+                            <ul className="space-y-3 text-sm text-muted-foreground">
+                                {aiInsights.map((insight, i) => <li key={i} className="flex items-start gap-3"><span className="mt-1.5 font-bold text-primary">&bull;</span>{insight.replace(/[-*]/g, '').trim()}</li>)}
+                            </ul>
+                        ) : <p className="text-sm text-muted-foreground">Generating insights...</p>}
+                    </Card>
+                    <TransactionAdvisor {...props} savingsGoals={goals} />
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card>
+                    <h3 className="text-lg font-semibold font-heading mb-4">Recent Transactions</h3>
+                    <div className="space-y-1">
+                        {recentTransactions.map(tx => (
+                            <div key={tx.id} className="flex justify-between items-center p-4 rounded-lg hover:bg-accent">
+                                <div>
+                                    <p className="font-medium">{tx.description}</p>
+                                    <p className="text-xs text-muted-foreground">{tx.date} &bull; {tx.category}</p>
+                                </div>
+                                <p className={`font-bold ${tx.type === 'income' ? 'text-primary' : 'text-foreground'}`}>
+                                    {tx.type === 'income' ? '+' : '-'}
+                                    {tx.amount.toLocaleString('en-US', { style: 'currency', currency: settings.currency })}
+                                </p>
+                            </div>
+                        ))}
+                    </div>
+                </Card>
+                <Card>
+                     <h3 className="text-lg font-semibold font-heading mb-4">Upcoming Bills</h3>
+                     <div className="space-y-1">
+                         {bills.filter(b => b.status !== 'Paid').slice(0,4).map(bill => (
+                             <BillItem key={bill.id} bill={bill} onApprove={(id) => handleBillAction(id, 'Scheduled')} onDecline={(id) => handleBillAction(id, 'Declined')} />
+                         ))}
+                     </div>
+                </Card>
+            </div>
         </div>
-        <div className="col-span-12 lg:col-span-6 xl:col-span-4"><RecentTransactions transactions={props.transactions} /></div>
-        <div className="col-span-12 lg:col-span-6 xl:col-span-4">{!props.isOffline && <SmartRecommendations tx={props.transactions} recExp={props.recurringExpenses} assets={props.assets}/>}</div>
-        <div className="col-span-12 xl:col-span-4">{!props.isOffline && <LocationInsights tx={props.transactions} />}</div>
-        <div className="col-span-12"><BillPayCenter bills={props.bills} setBills={props.setBills} /></div>
-    </div>
-  );
+    );
 };

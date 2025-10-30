@@ -1,6 +1,6 @@
-
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { GoogleGenAI, LiveServerMessage, Modality, Blob, LiveSession } from "@google/genai";
+// Fix: 'LiveSession' is not an exported member of '@google/genai'. It has been removed from the import.
+import { GoogleGenAI, LiveServerMessage, Modality, Blob } from "@google/genai";
 import { BotIcon, UserIcon, StopCircleIcon } from './Icons';
 
 interface LiveAssistantProps {
@@ -69,7 +69,8 @@ export const LiveAssistant: React.FC<LiveAssistantProps> = ({ onClose }) => {
     const [status, setStatus] = useState<Status>('IDLE');
     const [transcriptionHistory, setTranscriptionHistory] = useState<TranscriptionEntry[]>([]);
     
-    const sessionPromiseRef = useRef<Promise<LiveSession> | null>(null);
+    // Fix: The 'LiveSession' type is not exported. Use 'any' for the session promise ref type.
+    const sessionPromiseRef = useRef<Promise<any> | null>(null);
     const inputAudioContextRef = useRef<AudioContext | null>(null);
     const outputAudioContextRef = useRef<AudioContext | null>(null);
     const mediaStreamRef = useRef<MediaStream | null>(null);
@@ -129,47 +130,53 @@ export const LiveAssistant: React.FC<LiveAssistantProps> = ({ onClose }) => {
                         scriptProcessorRef.current.connect(inputAudioContextRef.current!.destination);
                     },
                     onmessage: async (message: LiveServerMessage) => {
-                         if (message.serverContent?.inputTranscription) {
-                            currentInputTranscriptionRef.current += message.serverContent.inputTranscription.text;
-                             addOrUpdateTranscription('user', message.serverContent.inputTranscription.text, false);
-                         }
-                        
-                         if (message.serverContent?.outputTranscription) {
-                            currentOutputTranscriptionRef.current += message.serverContent.outputTranscription.text;
-                             addOrUpdateTranscription('ai', message.serverContent.outputTranscription.text, false);
-                         }
-                        
-                        if (message.serverContent?.turnComplete) {
-                            currentInputTranscriptionRef.current = '';
-                            currentOutputTranscriptionRef.current = '';
-                        }
-
-                        const base64Audio = message.serverContent?.modelTurn?.parts?.[0]?.inlineData?.data;
-                        if (base64Audio) {
-                            setStatus('SPEAKING');
-                            const audioBuffer = await decodeAudioData(decode(base64Audio), outputAudioContextRef.current!, 24000, 1);
-                            nextStartTimeRef.current = Math.max(nextStartTimeRef.current, outputAudioContextRef.current!.currentTime);
+                        try {
+                             if (message.serverContent?.inputTranscription) {
+                                currentInputTranscriptionRef.current += message.serverContent.inputTranscription.text;
+                                 addOrUpdateTranscription('user', message.serverContent.inputTranscription.text, false);
+                             }
                             
-                            const source = outputAudioContextRef.current!.createBufferSource();
-                            source.buffer = audioBuffer;
-                            source.connect(outputAudioContextRef.current!.destination);
-                            source.start(nextStartTimeRef.current);
-                            nextStartTimeRef.current += audioBuffer.duration;
-                            playingSourcesRef.current.add(source);
-                            source.onended = () => {
-                                playingSourcesRef.current.delete(source);
-                                if (playingSourcesRef.current.size === 0) {
-                                    setStatus('LISTENING');
-                                }
-                            };
-                        }
-                        if (message.serverContent?.interrupted) {
-                            for (const source of playingSourcesRef.current.values()) {
-                                source.stop();
+                             if (message.serverContent?.outputTranscription) {
+                                currentOutputTranscriptionRef.current += message.serverContent.outputTranscription.text;
+                                 addOrUpdateTranscription('ai', message.serverContent.outputTranscription.text, false);
+                             }
+                            
+                            if (message.serverContent?.turnComplete) {
+                                currentInputTranscriptionRef.current = '';
+                                currentOutputTranscriptionRef.current = '';
                             }
-                            playingSourcesRef.current.clear();
-                            nextStartTimeRef.current = 0;
-                            setStatus('LISTENING');
+
+                            const base64Audio = message.serverContent?.modelTurn?.parts?.[0]?.inlineData?.data;
+                            if (base64Audio) {
+                                setStatus('SPEAKING');
+                                if (!outputAudioContextRef.current || outputAudioContextRef.current.state === 'closed') return;
+                                const audioBuffer = await decodeAudioData(decode(base64Audio), outputAudioContextRef.current, 24000, 1);
+                                nextStartTimeRef.current = Math.max(nextStartTimeRef.current, outputAudioContextRef.current.currentTime);
+                                
+                                const source = outputAudioContextRef.current.createBufferSource();
+                                source.buffer = audioBuffer;
+                                source.connect(outputAudioContextRef.current.destination);
+                                source.start(nextStartTimeRef.current);
+                                nextStartTimeRef.current += audioBuffer.duration;
+                                playingSourcesRef.current.add(source);
+                                source.onended = () => {
+                                    playingSourcesRef.current.delete(source);
+                                    if (playingSourcesRef.current.size === 0) {
+                                        setStatus('LISTENING');
+                                    }
+                                };
+                            }
+                            if (message.serverContent?.interrupted) {
+                                for (const source of playingSourcesRef.current.values()) {
+                                    source.stop();
+                                }
+                                playingSourcesRef.current.clear();
+                                nextStartTimeRef.current = 0;
+                                setStatus('LISTENING');
+                            }
+                        } catch (error) {
+                            console.error("Error processing server message:", error);
+                            setStatus('ERROR');
                         }
                     },
                     onerror: (e) => { console.error('Live session error:', e); setStatus('ERROR'); },
@@ -211,29 +218,29 @@ export const LiveAssistant: React.FC<LiveAssistantProps> = ({ onClose }) => {
     
     return (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center">
-            <div className="bg-white dark:bg-navy-900 rounded-2xl shadow-lg w-full max-w-2xl h-[80vh] flex flex-col">
-                <header className="p-4 border-b border-slate-200 dark:border-navy-800 flex justify-between items-center">
+            <div className="bg-card text-card-foreground rounded-2xl shadow-lg w-full max-w-2xl h-[80vh] flex flex-col">
+                <header className="p-4 border-b border-border flex justify-between items-center">
                     <h2 className="text-xl font-bold font-heading">Live AI Assistant</h2>
                     <div className="flex items-center gap-2">
-                        <div className={`w-3 h-3 rounded-full ${status === 'LISTENING' ? 'bg-green-500 animate-pulse' : 'bg-slate-400'}`}></div>
-                        <span className="text-sm font-medium text-slate-600 dark:text-slate-300">{statusText[status]}</span>
+                        <div className={`w-3 h-3 rounded-full ${status === 'LISTENING' ? 'bg-green-500 animate-pulse' : 'bg-muted'}`}></div>
+                        <span className="text-sm font-medium text-muted-foreground">{statusText[status]}</span>
                     </div>
                 </header>
                 <div className="flex-1 overflow-y-auto p-6 space-y-6">
                      {transcriptionHistory.map((entry) => (
                         <div key={entry.id} className={`flex items-start gap-4 ${entry.sender === 'user' ? 'justify-end' : ''}`}>
-                            {entry.sender === 'ai' && <div className="flex-shrink-0 h-8 w-8 rounded-full bg-soft-green-500 flex items-center justify-center text-white"><BotIcon className="h-5 w-5" /></div>}
-                            <div className={`max-w-md p-3 rounded-2xl ${entry.sender === 'user' ? 'bg-navy-700 text-white rounded-br-none' : 'bg-slate-100 dark:bg-navy-800 rounded-bl-none'}`}>
+                            {entry.sender === 'ai' && <div className="flex-shrink-0 h-8 w-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground"><BotIcon className="h-5 w-5" /></div>}
+                            <div className={`max-w-md p-3 rounded-2xl ${entry.sender === 'user' ? 'bg-primary text-primary-foreground rounded-br-none' : 'bg-accent rounded-bl-none'}`}>
                                 <p className="text-sm">{entry.text}</p>
                             </div>
-                            {entry.sender === 'user' && <div className="flex-shrink-0 h-8 w-8 rounded-full bg-slate-200 dark:bg-navy-700 flex items-center justify-center"><UserIcon className="h-5 w-5" /></div>}
+                            {entry.sender === 'user' && <div className="flex-shrink-0 h-8 w-8 rounded-full bg-secondary flex items-center justify-center text-secondary-foreground"><UserIcon className="h-5 w-5" /></div>}
                         </div>
                      ))}
                 </div>
-                <footer className="p-4 border-t border-slate-200 dark:border-navy-800">
+                <footer className="p-4 border-t border-border">
                      <button 
                         onClick={stopConversation}
-                        className="w-full flex justify-center items-center gap-2 py-3 px-4 rounded-lg bg-red-600 text-white font-medium hover:bg-red-700 transition"
+                        className="w-full flex justify-center items-center gap-2 py-3 px-4 rounded-lg bg-destructive text-destructive-foreground font-medium hover:bg-destructive/90 transition"
                     >
                         <StopCircleIcon className="h-6 w-6" />
                         End Conversation

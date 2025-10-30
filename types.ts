@@ -16,7 +16,8 @@ export interface BudgetCategory {
 }
 
 export interface SavingsGoal {
-  id?: string;
+  // FIX: Made id required to conform to generic type constraints. It is initialized as an empty string for new goals.
+  id: string;
   name: string;
   targetAmount: number;
   currentAmount: number;

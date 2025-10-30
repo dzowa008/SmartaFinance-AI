@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { LogoIcon, MailIcon, LockIcon, GoogleIcon } from './Icons';
 
@@ -17,30 +16,30 @@ export const SignIn: React.FC<SignInProps> = ({ onSignInSuccess, onSwitchToSignU
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-navy-950 p-4 transition-colors duration-300">
-      <div className="w-full max-w-4xl bg-white dark:bg-navy-900 rounded-2xl shadow-lg flex overflow-hidden">
+    <div className="flex items-center justify-center min-h-screen bg-background p-4 transition-colors duration-300">
+      <div className="w-full max-w-4xl bg-card text-card-foreground rounded-xl border border-border flex overflow-hidden">
         {/* Left Side - Branding */}
-        <div className="hidden md:flex flex-col items-center justify-center w-1/2 bg-navy-800 p-12 text-white">
-          <LogoIcon className="h-16 w-16 text-soft-green-500" />
+        <div className="hidden md:flex flex-col items-center justify-center w-1/2 bg-primary p-12 text-primary-foreground">
+          <LogoIcon className="h-16 w-16" />
           <h1 className="text-3xl font-bold font-heading mt-4 text-center">SmartFinance AI</h1>
-          <p className="text-navy-200 mt-2 text-center">Take control of your financial future. Intelligently.</p>
+          <p className="text-primary-foreground/80 mt-2 text-center">Take control of your financial future. Intelligently.</p>
         </div>
 
         {/* Right Side - Form */}
         <div className="w-full md:w-1/2 p-8 sm:p-12">
           <div className="md:hidden flex flex-col items-center mb-6">
-            <LogoIcon className="h-12 w-12 text-soft-green-500" />
-            <h1 className="text-2xl font-bold font-heading mt-2 text-slate-900 dark:text-white">Welcome Back</h1>
+            <LogoIcon className="h-12 w-12 text-primary" />
+            <h1 className="text-2xl font-bold font-heading mt-2">Welcome Back</h1>
           </div>
-          <h2 className="hidden md:block text-2xl font-bold font-heading text-slate-800 dark:text-slate-100">Welcome Back</h2>
-          <p className="text-slate-500 dark:text-slate-400 mt-1">Sign in to access your dashboard.</p>
+          <h2 className="hidden md:block text-2xl font-bold font-heading text-foreground">Welcome Back</h2>
+          <p className="text-muted-foreground mt-1">Sign in to access your dashboard.</p>
 
           <form className="mt-8 space-y-6">
             <div>
-              <label htmlFor="email" className="text-sm font-medium text-slate-700 dark:text-slate-300">Email Address</label>
+              <label htmlFor="email" className="text-sm font-medium text-foreground">Email Address</label>
               <div className="relative mt-2">
                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                   <MailIcon className="h-5 w-5 text-slate-400" />
+                   <MailIcon className="h-5 w-5 text-muted-foreground" />
                  </div>
                 <input 
                   id="email" 
@@ -48,7 +47,7 @@ export const SignIn: React.FC<SignInProps> = ({ onSignInSuccess, onSwitchToSignU
                   type="email" 
                   autoComplete="email" 
                   required 
-                  className="w-full pl-10 pr-4 py-3 rounded-lg bg-slate-100 dark:bg-navy-800 border border-transparent focus:ring-2 focus:ring-soft-green-500 focus:outline-none transition" 
+                  className="w-full pl-10 pr-4 py-3 rounded-lg bg-input border border-border focus:ring-2 focus:ring-ring focus:outline-none transition" 
                   placeholder="you@example.com"
                 />
               </div>
@@ -56,14 +55,14 @@ export const SignIn: React.FC<SignInProps> = ({ onSignInSuccess, onSwitchToSignU
 
             <div>
               <div className="flex items-center justify-between">
-                <label htmlFor="password" className="text-sm font-medium text-slate-700 dark:text-slate-300">Password</label>
-                <a href="#" className="text-sm font-medium text-soft-green-600 hover:text-soft-green-500">
+                <label htmlFor="password" className="text-sm font-medium text-foreground">Password</label>
+                <a href="#" className="text-sm font-medium text-primary hover:text-primary/90">
                   Forgot password?
                 </a>
               </div>
               <div className="relative mt-2">
                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                   <LockIcon className="h-5 w-5 text-slate-400" />
+                   <LockIcon className="h-5 w-5 text-muted-foreground" />
                  </div>
                 <input 
                   id="password" 
@@ -71,7 +70,7 @@ export const SignIn: React.FC<SignInProps> = ({ onSignInSuccess, onSwitchToSignU
                   type="password" 
                   autoComplete="current-password" 
                   required 
-                  className="w-full pl-10 pr-4 py-3 rounded-lg bg-slate-100 dark:bg-navy-800 border border-transparent focus:ring-2 focus:ring-soft-green-500 focus:outline-none transition" 
+                  className="w-full pl-10 pr-4 py-3 rounded-lg bg-input border border-border focus:ring-2 focus:ring-ring focus:outline-none transition" 
                   placeholder="••••••••"
                 />
               </div>
@@ -80,7 +79,7 @@ export const SignIn: React.FC<SignInProps> = ({ onSignInSuccess, onSwitchToSignU
             <div>
               <button
                 onClick={handleSignIn}
-                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-soft-green-600 hover:bg-soft-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-soft-green-500 transition-transform hover:scale-[1.02]"
+                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-transform hover:scale-[1.02]"
               >
                 Sign In
               </button>
@@ -89,26 +88,26 @@ export const SignIn: React.FC<SignInProps> = ({ onSignInSuccess, onSwitchToSignU
 
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center" aria-hidden="true">
-              <div className="w-full border-t border-slate-300 dark:border-navy-700" />
+              <div className="w-full border-t border-border" />
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="bg-white dark:bg-navy-900 px-2 text-slate-500 dark:text-slate-400">OR</span>
+              <span className="bg-card px-2 text-muted-foreground">OR</span>
             </div>
           </div>
 
           <div>
             <button
               onClick={onGoogleSignIn}
-              className="w-full flex justify-center items-center gap-3 py-3 px-4 border border-slate-300 dark:border-navy-700 rounded-lg shadow-sm text-sm font-medium text-slate-700 dark:text-slate-200 bg-white dark:bg-navy-800 hover:bg-slate-50 dark:hover:bg-navy-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-soft-green-500 transition-transform hover:scale-[1.02]"
+              className="w-full flex justify-center items-center gap-3 py-3 px-4 border border-border rounded-lg text-sm font-medium text-foreground bg-card hover:bg-accent focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ring transition-transform hover:scale-[1.02]"
             >
               <GoogleIcon className="h-5 w-5" />
               Sign in with Google
             </button>
           </div>
           
-          <p className="mt-8 text-center text-sm text-slate-500 dark:text-slate-400">
+          <p className="mt-8 text-center text-sm text-muted-foreground">
             Don't have an account?{' '}
-            <button onClick={onSwitchToSignUp} className="font-medium text-soft-green-600 hover:text-soft-green-500">
+            <button onClick={onSwitchToSignUp} className="font-medium text-primary hover:text-primary/90">
               Sign Up
             </button>
           </p>

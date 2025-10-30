@@ -1,15 +1,18 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { SignIn } from './components/SignIn';
 import { SignUp } from './components/SignUp';
 import { MainApp } from './components/MainApp';
 import { Onboarding } from './components/Onboarding';
 import { UserProfile } from './types';
+import { db } from './services/dbService';
 
 type AuthView = 'signIn' | 'signUp';
 type InitialView = 'dashboard' | 'financialHub';
 
 const App: React.FC = () => {
+  const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authView, setAuthView] = useState<AuthView>('signIn');
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
@@ -17,80 +20,69 @@ const App: React.FC = () => {
   const [initialView, setInitialView] = useState<InitialView>('dashboard');
   
   useEffect(() => {
-    // Check for a token and onboarding status to persist login state.
-    const token = localStorage.getItem('authToken');
-    const hasCompletedOnboarding = localStorage.getItem('hasCompletedOnboarding') === 'true';
-    
-    if (token) {
-      setIsAuthenticated(true);
-      if (hasCompletedOnboarding) {
-        const savedProfile = localStorage.getItem('userProfile');
-        if (savedProfile) {
-          setUserProfile(JSON.parse(savedProfile));
+    const checkAuthStatus = async () => {
+      setIsLoading(true);
+      const token = localStorage.getItem('authToken');
+      if (token) {
+        setIsAuthenticated(true);
+        const profile = await db.getUserProfile();
+        if (profile) {
+          setUserProfile(profile);
+          setNeedsOnboarding(false);
+        } else {
+          setNeedsOnboarding(true);
         }
-        setNeedsOnboarding(false);
       } else {
-        // This case is for a user who signed up but didn't finish onboarding.
-        setNeedsOnboarding(true);
+        setIsAuthenticated(false);
+        setNeedsOnboarding(false);
       }
-    }
+      setIsLoading(false);
+    };
+
+    checkAuthStatus();
   }, []);
 
-  const handleSignInSuccess = () => {
+  const handleSignInSuccess = async () => {
     localStorage.setItem('authToken', 'your_jwt_token_here');
-    // For existing users, we assume onboarding is complete.
-    localStorage.setItem('hasCompletedOnboarding', 'true');
-    const savedProfile = localStorage.getItem('userProfile');
-    if (savedProfile) {
-        setUserProfile(JSON.parse(savedProfile));
-    }
+    const profile = await db.getUserProfile();
     setIsAuthenticated(true);
-    setNeedsOnboarding(false);
-    setInitialView('dashboard'); // Default for sign-in
+    if (profile) {
+      setUserProfile(profile);
+      setNeedsOnboarding(false);
+    } else {
+      setNeedsOnboarding(true);
+    }
+    setInitialView('dashboard');
   };
   
-  const handleSignUpSuccess = () => {
+  const handleSignUpSuccess = async () => {
     localStorage.setItem('authToken', 'your_jwt_token_for_new_user');
-    // A new user has not completed onboarding.
-    localStorage.removeItem('hasCompletedOnboarding');
-    localStorage.removeItem('userProfile');
     setIsAuthenticated(true);
     setNeedsOnboarding(true);
   };
 
-  const handleGoogleSignInSuccess = () => {
+  const handleGoogleSignInSuccess = async () => {
     localStorage.setItem('authToken', 'your_jwt_token_from_google');
-    const hasCompletedOnboarding = localStorage.getItem('hasCompletedOnboarding') === 'true';
-    
+    const profile = await db.getUserProfile();
     setIsAuthenticated(true);
-
-    if (hasCompletedOnboarding) {
-      // Existing user
-      const savedProfile = localStorage.getItem('userProfile');
-      if (savedProfile) {
-          setUserProfile(JSON.parse(savedProfile));
-      }
+    if (profile) {
+      setUserProfile(profile);
       setNeedsOnboarding(false);
       setInitialView('dashboard');
     } else {
-      // New user
-      localStorage.removeItem('userProfile');
       setNeedsOnboarding(true);
     }
   };
 
-  const handleOnboardingComplete = (profile: UserProfile) => {
-    localStorage.setItem('hasCompletedOnboarding', 'true');
-    localStorage.setItem('userProfile', JSON.stringify(profile));
+  const handleOnboardingComplete = async (profile: UserProfile) => {
+    await db.putUserProfile(profile);
     setUserProfile(profile);
     setNeedsOnboarding(false);
-    setInitialView('financialHub'); // Guide user to the next step
+    setInitialView('financialHub');
   };
 
   const handleSignOut = () => {
     localStorage.removeItem('authToken');
-    localStorage.removeItem('hasCompletedOnboarding');
-    localStorage.removeItem('userProfile');
     setIsAuthenticated(false);
     setNeedsOnboarding(false);
     setUserProfile(null);
@@ -98,14 +90,25 @@ const App: React.FC = () => {
   };
   
   useEffect(() => {
-    const isDarkMode = localStorage.getItem('theme') === 'dark' || 
-      (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches);
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
+    const applyTheme = async () => {
+        const settings = await db.getSettings();
+        const theme = settings ? settings.theme : 'dark'; // Default to dark if no settings
+        if (theme === 'dark') {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    };
+    applyTheme();
   }, []);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     if (authView === 'signIn') {
@@ -122,8 +125,8 @@ const App: React.FC = () => {
     return <MainApp userProfile={userProfile} onSignOut={handleSignOut} initialView={initialView} />;
   }
 
-  // Fallback for the brief moment profile is loading
-  return <div className="min-h-screen bg-slate-50 dark:bg-navy-950"></div>;
+  // Fallback for the brief moment profile is loading or in an inconsistent state
+  return <div className="min-h-screen bg-background"></div>;
 };
 
 export default App;

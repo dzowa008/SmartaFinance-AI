@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card } from './Card';
 import { generateLesson } from '../services/geminiService';
@@ -32,15 +31,18 @@ export const Learn: React.FC = () => {
     };
 
     return (
-        <>
-            <h2 className="text-3xl font-bold font-heading mb-6">AI Financial Education Hub</h2>
+        <div className="space-y-6">
+            <div>
+                <h2 className="text-3xl font-bold font-heading">AI Financial Education Hub</h2>
+                <p className="text-muted-foreground text-lg">Learn about key financial concepts with AI-powered lessons.</p>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <Card className="md:col-span-1">
                     <h3 className="text-xl font-bold font-heading mb-4">Topics</h3>
                     <ul className="space-y-2">
                         {TOPICS.map(topic => (
                             <li key={topic}>
-                                <button onClick={() => handleSelectTopic(topic)} className={`w-full text-left p-2 rounded-lg ${selectedTopic === topic ? 'bg-soft-green-500 text-white' : 'hover:bg-slate-100 dark:hover:bg-navy-800'}`}>
+                                <button onClick={() => handleSelectTopic(topic)} className={`w-full text-left p-3 rounded-lg transition-colors ${selectedTopic === topic ? 'bg-primary text-primary-foreground font-semibold' : 'hover:bg-accent'}`}>
                                     {topic}
                                 </button>
                             </li>
@@ -49,13 +51,13 @@ export const Learn: React.FC = () => {
                 </Card>
                 <Card className="md:col-span-2">
                     {!selectedTopic ? (
-                        <div className="text-center text-slate-500 py-24">Select a topic to start learning.</div>
+                        <div className="text-center text-muted-foreground py-24 flex flex-col items-center justify-center h-full">Select a topic to start learning.</div>
                     ) : isLoading ? (
                         <div className="animate-pulse space-y-4">
-                            <div className="h-6 w-3/4 bg-slate-200 dark:bg-navy-800 rounded"></div>
-                            <div className="h-4 w-full bg-slate-200 dark:bg-navy-800 rounded"></div>
-                            <div className="h-4 w-5/6 bg-slate-200 dark:bg-navy-800 rounded"></div>
-                            <div className="pt-8"><div className="h-5 w-1/2 bg-slate-200 dark:bg-navy-800 rounded"></div><div className="space-y-2 mt-4"><div className="h-10 bg-slate-200 dark:bg-navy-800 rounded"></div><div className="h-10 bg-slate-200 dark:bg-navy-800 rounded"></div></div></div>
+                            <div className="h-6 w-3/4 bg-muted rounded"></div>
+                            <div className="h-4 w-full bg-muted rounded"></div>
+                            <div className="h-4 w-5/6 bg-muted rounded"></div>
+                            <div className="pt-8"><div className="h-5 w-1/2 bg-muted rounded"></div><div className="space-y-2 mt-4"><div className="h-10 bg-muted rounded"></div><div className="h-10 bg-muted rounded"></div></div></div>
                         </div>
                     ) : lesson ? (
                         <div>
@@ -69,21 +71,21 @@ export const Learn: React.FC = () => {
                                         onClick={() => handleAnswerSubmit(option)}
                                         disabled={selectedAnswer !== null}
                                         className={`w-full text-left p-3 rounded-lg border-2 transition-colors ${
-                                            selectedAnswer === null ? 'border-slate-200 dark:border-navy-700 hover:bg-slate-100 dark:hover:bg-navy-800' :
-                                            option === lesson.answer ? 'border-soft-green-500 bg-soft-green-500/10' :
-                                            option === selectedAnswer ? 'border-red-500 bg-red-500/10' : 'border-slate-200 dark:border-navy-700'
+                                            selectedAnswer === null ? 'border-border hover:bg-accent' :
+                                            option === lesson.answer ? 'border-primary bg-primary/10' :
+                                            option === selectedAnswer ? 'border-destructive bg-destructive/10' : 'border-border'
                                         }`}
                                     >{option}</button>
                                 ))}
                             </div>
-                            {isCorrect === true && <p className="mt-4 text-soft-green-600 font-semibold">Correct! Well done.</p>}
-                            {isCorrect === false && <p className="mt-4 text-red-500 font-semibold">Not quite. The correct answer was: {lesson.answer}</p>}
+                            {isCorrect === true && <p className="mt-4 text-primary font-semibold">Correct! Well done.</p>}
+                            {isCorrect === false && <p className="mt-4 text-destructive font-semibold">Not quite. The correct answer was: {lesson.answer}</p>}
                         </div>
                     ) : (
-                         <div className="text-center text-slate-500 py-24">Could not load lesson. Please try again.</div>
+                         <div className="text-center text-muted-foreground py-24">Could not load lesson. Please try again.</div>
                     )}
                 </Card>
             </div>
-        </>
+        </div>
     );
 };
