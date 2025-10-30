@@ -7,6 +7,18 @@ interface LiveAssistantProps {
     onClose: () => void;
 }
 
+const SUPPORTED_LANGUAGES = [
+  { code: 'en-US', name: 'English (US)' },
+  { code: 'es-ES', name: 'Español (España)' },
+  { code: 'fr-FR', name: 'Français' },
+  { code: 'de-DE', name: 'Deutsch' },
+  { code: 'it-IT', name: 'Italiano' },
+  { code: 'ja-JP', name: '日本語' },
+  { code: 'pt-BR', name: 'Português (Brasil)' },
+  { code: 'ru-RU', name: 'Русский' },
+  { code: 'zh-CN', name: '中文 (简体)' },
+];
+
 type Status = 'IDLE' | 'CONNECTING' | 'LISTENING' | 'SPEAKING' | 'ERROR';
 type TranscriptionEntry = {
     id: number;
@@ -68,6 +80,7 @@ function createBlob(data: Float32Array): Blob {
 export const LiveAssistant: React.FC<LiveAssistantProps> = ({ onClose }) => {
     const [status, setStatus] = useState<Status>('IDLE');
     const [transcriptionHistory, setTranscriptionHistory] = useState<TranscriptionEntry[]>([]);
+    const [currentLanguage, setCurrentLanguage] = useState('en-US');
     
     // Fix: The 'LiveSession' type is not exported. Use 'any' for the session promise ref type.
     const sessionPromiseRef = useRef<Promise<any> | null>(null);
@@ -80,32 +93,51 @@ export const LiveAssistant: React.FC<LiveAssistantProps> = ({ onClose }) => {
     const currentInputTranscriptionRef = useRef('');
     const currentOutputTranscriptionRef = useRef('');
 
-    const addOrUpdateTranscription = (sender: 'user' | 'ai', text: string, isFinal: boolean) => {
+    const addOrUpdateTranscription = (sender: 'user' | 'ai', text: string) => {
         setTranscriptionHistory(prev => {
             const lastEntry = prev[prev.length - 1];
-            if (lastEntry && lastEntry.sender === sender && !isFinal) {
-                // Update the last entry
+            if (lastEntry && lastEntry.sender === sender) {
                 const updatedHistory = [...prev];
                 updatedHistory[prev.length - 1] = { ...lastEntry, text: lastEntry.text + text };
                 return updatedHistory;
             } else {
-                // Add a new entry
                 return [...prev, { id: Date.now(), sender, text }];
             }
         });
     };
 
-    const startConversation = useCallback(async () => {
+    const stopSession = useCallback(() => {
+        sessionPromiseRef.current?.then(session => session.close()).catch(e => console.error("Error closing session:", e));
+        sessionPromiseRef.current = null;
+        mediaStreamRef.current?.getTracks().forEach(track => track.stop());
+        mediaStreamRef.current = null;
+        scriptProcessorRef.current?.disconnect();
+        scriptProcessorRef.current = null;
+        if (inputAudioContextRef.current && inputAudioContextRef.current.state !== 'closed') {
+            inputAudioContextRef.current.close().catch(e => console.error("Error closing input audio context:", e));
+        }
+        inputAudioContextRef.current = null;
+        if (outputAudioContextRef.current && outputAudioContextRef.current.state !== 'closed') {
+            outputAudioContextRef.current.close().catch(e => console.error("Error closing output audio context:", e));
+        }
+        outputAudioContextRef.current = null;
+        nextStartTimeRef.current = 0;
+        playingSourcesRef.current.clear();
+        currentInputTranscriptionRef.current = '';
+        currentOutputTranscriptionRef.current = '';
+    }, []);
+
+    const startConversation = useCallback(async (language: string) => {
         setStatus('CONNECTING');
+        setTranscriptionHistory([]);
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             mediaStreamRef.current = stream;
-
             inputAudioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
             outputAudioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
-            
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
-            
+            const selectedLangName = SUPPORTED_LANGUAGES.find(l => l.code === language)?.name || 'English';
+
             sessionPromiseRef.current = ai.live.connect({
                 model: 'gemini-2.5-flash-native-audio-preview-09-2025',
                 config: {
@@ -113,6 +145,7 @@ export const LiveAssistant: React.FC<LiveAssistantProps> = ({ onClose }) => {
                     inputAudioTranscription: {},
                     outputAudioTranscription: {},
                     speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Zephyr' } } },
+                    systemInstruction: `You are a helpful AI financial assistant. Please converse with the user in ${selectedLangName}.`,
                 },
                 callbacks: {
                     onopen: () => {
@@ -132,19 +165,12 @@ export const LiveAssistant: React.FC<LiveAssistantProps> = ({ onClose }) => {
                     onmessage: async (message: LiveServerMessage) => {
                         try {
                              if (message.serverContent?.inputTranscription) {
-                                currentInputTranscriptionRef.current += message.serverContent.inputTranscription.text;
-                                 addOrUpdateTranscription('user', message.serverContent.inputTranscription.text, false);
+                                addOrUpdateTranscription('user', message.serverContent.inputTranscription.text);
                              }
                             
                              if (message.serverContent?.outputTranscription) {
-                                currentOutputTranscriptionRef.current += message.serverContent.outputTranscription.text;
-                                 addOrUpdateTranscription('ai', message.serverContent.outputTranscription.text, false);
+                                addOrUpdateTranscription('ai', message.serverContent.outputTranscription.text);
                              }
-                            
-                            if (message.serverContent?.turnComplete) {
-                                currentInputTranscriptionRef.current = '';
-                                currentOutputTranscriptionRef.current = '';
-                            }
 
                             const base64Audio = message.serverContent?.modelTurn?.parts?.[0]?.inlineData?.data;
                             if (base64Audio) {
@@ -152,7 +178,6 @@ export const LiveAssistant: React.FC<LiveAssistantProps> = ({ onClose }) => {
                                 if (!outputAudioContextRef.current || outputAudioContextRef.current.state === 'closed') return;
                                 const audioBuffer = await decodeAudioData(decode(base64Audio), outputAudioContextRef.current, 24000, 1);
                                 nextStartTimeRef.current = Math.max(nextStartTimeRef.current, outputAudioContextRef.current.currentTime);
-                                
                                 const source = outputAudioContextRef.current.createBufferSource();
                                 source.buffer = audioBuffer;
                                 source.connect(outputAudioContextRef.current.destination);
@@ -180,33 +205,25 @@ export const LiveAssistant: React.FC<LiveAssistantProps> = ({ onClose }) => {
                         }
                     },
                     onerror: (e) => { console.error('Live session error:', e); setStatus('ERROR'); },
-                    onclose: () => { console.log('Live session closed.'); },
+                    onclose: () => { console.log('Live session closed.'); setStatus('IDLE'); },
                 },
             });
-
         } catch (error) {
             console.error('Failed to start conversation:', error);
             setStatus('ERROR');
         }
     }, []);
 
-    const stopConversation = useCallback(() => {
-        sessionPromiseRef.current?.then(session => session.close());
-        mediaStreamRef.current?.getTracks().forEach(track => track.stop());
-        scriptProcessorRef.current?.disconnect();
-        if (inputAudioContextRef.current && inputAudioContextRef.current.state !== 'closed') {
-            inputAudioContextRef.current.close();
-        }
-        if (outputAudioContextRef.current && outputAudioContextRef.current.state !== 'closed') {
-            outputAudioContextRef.current.close();
-        }
+    useEffect(() => {
+        startConversation(currentLanguage);
+        return () => {
+            stopSession();
+        };
+    }, [currentLanguage, startConversation, stopSession]);
+
+    const handleClose = useCallback(() => {
         onClose();
     }, [onClose]);
-
-    useEffect(() => {
-        startConversation();
-        return () => stopConversation();
-    }, [startConversation, stopConversation]);
 
     const statusText: { [key in Status]: string } = {
         IDLE: 'Idle',
@@ -221,9 +238,21 @@ export const LiveAssistant: React.FC<LiveAssistantProps> = ({ onClose }) => {
             <div className="bg-card text-card-foreground rounded-2xl shadow-lg w-full max-w-2xl h-[80vh] flex flex-col">
                 <header className="p-4 border-b border-border flex justify-between items-center">
                     <h2 className="text-xl font-bold font-heading">Live AI Assistant</h2>
-                    <div className="flex items-center gap-2">
-                        <div className={`w-3 h-3 rounded-full ${status === 'LISTENING' ? 'bg-green-500 animate-pulse' : 'bg-muted'}`}></div>
-                        <span className="text-sm font-medium text-muted-foreground">{statusText[status]}</span>
+                    <div className="flex items-center gap-4">
+                        <select
+                            value={currentLanguage}
+                            onChange={(e) => setCurrentLanguage(e.target.value)}
+                            className="bg-input border border-border rounded-md px-2 py-1 text-sm focus:ring-1 focus:ring-ring outline-none"
+                            aria-label="Select conversation language"
+                        >
+                            {SUPPORTED_LANGUAGES.map(lang => (
+                                <option key={lang.code} value={lang.code}>{lang.name}</option>
+                            ))}
+                        </select>
+                        <div className="flex items-center gap-2">
+                            <div className={`w-3 h-3 rounded-full ${status === 'LISTENING' ? 'bg-green-500 animate-pulse' : 'bg-muted'}`}></div>
+                            <span className="text-sm font-medium text-muted-foreground">{statusText[status]}</span>
+                        </div>
                     </div>
                 </header>
                 <div className="flex-1 overflow-y-auto p-6 space-y-6">
@@ -239,7 +268,7 @@ export const LiveAssistant: React.FC<LiveAssistantProps> = ({ onClose }) => {
                 </div>
                 <footer className="p-4 border-t border-border">
                      <button 
-                        onClick={stopConversation}
+                        onClick={handleClose}
                         className="w-full flex justify-center items-center gap-2 py-3 px-4 rounded-lg bg-destructive text-destructive-foreground font-medium hover:bg-destructive/90 transition"
                     >
                         <StopCircleIcon className="h-6 w-6" />
