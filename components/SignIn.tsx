@@ -1,12 +1,14 @@
+
 import React from 'react';
-import { LogoIcon, GoogleIcon, AppleIcon, MailIcon, LockIcon } from './Icons';
+import { LogoIcon, MailIcon, LockIcon, GoogleIcon } from './Icons';
 
 interface SignInProps {
   onSignInSuccess: () => void;
   onSwitchToSignUp: () => void;
+  onGoogleSignIn: () => void;
 }
 
-export const SignIn: React.FC<SignInProps> = ({ onSignInSuccess, onSwitchToSignUp }) => {
+export const SignIn: React.FC<SignInProps> = ({ onSignInSuccess, onSwitchToSignUp, onGoogleSignIn }) => {
   // In a real application, form state and submission logic would be handled here.
   // For this demonstration, we simulate a successful login by calling the callback on button click.
   const handleSignIn = (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -85,26 +87,23 @@ export const SignIn: React.FC<SignInProps> = ({ onSignInSuccess, onSwitchToSignU
             </div>
           </form>
 
-          <div className="mt-6">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-slate-300 dark:border-navy-700" />
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white dark:bg-navy-900 text-slate-500 dark:text-slate-400">Or continue with</span>
-              </div>
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center" aria-hidden="true">
+              <div className="w-full border-t border-slate-300 dark:border-navy-700" />
             </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="bg-white dark:bg-navy-900 px-2 text-slate-500 dark:text-slate-400">OR</span>
+            </div>
+          </div>
 
-            <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <button onClick={handleSignIn} className="w-full inline-flex justify-center items-center py-3 px-4 border border-slate-300 dark:border-navy-700 rounded-lg shadow-sm bg-white dark:bg-navy-800 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-navy-700 transition">
-                <GoogleIcon className="w-5 h-5 mr-2" />
-                <span>Google</span>
-              </button>
-              <button onClick={handleSignIn} className="w-full inline-flex justify-center items-center py-3 px-4 border border-slate-300 dark:border-navy-700 rounded-lg shadow-sm bg-white dark:bg-navy-800 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-navy-700 transition">
-                <AppleIcon className="w-5 h-5 mr-2" />
-                <span>Apple</span>
-              </button>
-            </div>
+          <div>
+            <button
+              onClick={onGoogleSignIn}
+              className="w-full flex justify-center items-center gap-3 py-3 px-4 border border-slate-300 dark:border-navy-700 rounded-lg shadow-sm text-sm font-medium text-slate-700 dark:text-slate-200 bg-white dark:bg-navy-800 hover:bg-slate-50 dark:hover:bg-navy-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-soft-green-500 transition-transform hover:scale-[1.02]"
+            >
+              <GoogleIcon className="h-5 w-5" />
+              Sign in with Google
+            </button>
           </div>
           
           <p className="mt-8 text-center text-sm text-slate-500 dark:text-slate-400">

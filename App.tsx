@@ -58,6 +58,27 @@ const App: React.FC = () => {
     setNeedsOnboarding(true);
   };
 
+  const handleGoogleSignInSuccess = () => {
+    localStorage.setItem('authToken', 'your_jwt_token_from_google');
+    const hasCompletedOnboarding = localStorage.getItem('hasCompletedOnboarding') === 'true';
+    
+    setIsAuthenticated(true);
+
+    if (hasCompletedOnboarding) {
+      // Existing user
+      const savedProfile = localStorage.getItem('userProfile');
+      if (savedProfile) {
+          setUserProfile(JSON.parse(savedProfile));
+      }
+      setNeedsOnboarding(false);
+      setInitialView('dashboard');
+    } else {
+      // New user
+      localStorage.removeItem('userProfile');
+      setNeedsOnboarding(true);
+    }
+  };
+
   const handleOnboardingComplete = (profile: UserProfile) => {
     localStorage.setItem('hasCompletedOnboarding', 'true');
     localStorage.setItem('userProfile', JSON.stringify(profile));
@@ -88,9 +109,9 @@ const App: React.FC = () => {
 
   if (!isAuthenticated) {
     if (authView === 'signIn') {
-      return <SignIn onSignInSuccess={handleSignInSuccess} onSwitchToSignUp={() => setAuthView('signUp')} />;
+      return <SignIn onSignInSuccess={handleSignInSuccess} onSwitchToSignUp={() => setAuthView('signUp')} onGoogleSignIn={handleGoogleSignInSuccess} />;
     }
-    return <SignUp onSignUpSuccess={handleSignUpSuccess} onSwitchToSignIn={() => setAuthView('signIn')} />;
+    return <SignUp onSignUpSuccess={handleSignUpSuccess} onSwitchToSignIn={() => setAuthView('signIn')} onGoogleSignIn={handleGoogleSignInSuccess} />;
   }
 
   if (needsOnboarding) {

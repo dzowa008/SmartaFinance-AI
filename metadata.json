@@ -2,6 +2,7 @@
   "name": "Copy of SmartFinance AI",
   "description": "An intelligent personal finance assistant to help you analyze transactions, track budgets, and receive personalized financial advice powered by AI.",
   "requestFramePermissions": [
-    "geolocation"
+    "geolocation",
+    "microphone"
   ]
 }
